@@ -44,6 +44,7 @@ import cats._
 import cats.implicits._
 
 import scala.annotation.tailrec
+import scala.io.Source
 
 object Defs {
   case class AInventory()
@@ -51,7 +52,9 @@ object Defs {
   case class AGroup(groupName: String, items: Map[String, AHost]=Map.empty, attrs: Map[String, Option[Any]]=Map.empty, parent: Option[AGroup]=None, children: List[AGroup]=Nil)
 
   case class AHost(name: String, attrs: Map[String, Option[Any]])
-  
+
+  val TOP_GROUP_NAME = "all"
+
   val predefinedAHostAttrs: Map[String, Option[Any]] = Map(
     "ansible_connection" -> None,
     "ansible_host" -> None,
@@ -299,8 +302,8 @@ object Defs {
         val aHosts = pg.items.map{ph => ph._1 -> AHost(ph._1, ph._2.attrs)}
         AGroup(pg.name, items=aHosts, attrs=pg.attrs)
       }
-      var topGroupOpt = subGroups.find(_.groupName == "global")
-      var topGroup = if (topGroupOpt.isDefined) topGroupOpt.get else AGroup("global")
+      var topGroupOpt = subGroups.find(_.groupName == TOP_GROUP_NAME)
+      var topGroup = if (topGroupOpt.isDefined) topGroupOpt.get else AGroup(TOP_GROUP_NAME)
       if (topGroupOpt.isEmpty) {
         subGroups = topGroup :: subGroups
       }
@@ -310,21 +313,9 @@ object Defs {
     }
   }
 
-  def ansibleLines(lines: Iterable[String], parentName: Option[String]): List[PResult] = {
-    List()
-  }
-
-  def readInventoryFile(filePath: String): Task[Option[AGroup]] = ZIO.effect {
-    val ini: Ini = new Ini(new File(filePath))
-
-    predefinedAHostAttrs.iterator.toList
-    ini.forEach{(s, ss) => {
-      AHost(
-        "",
-        Map(predefinedAHostAttrs.toList:_*)
-      )
-    }}
-    None
+  def readInventoryFile(filePath: String): Task[AGroup] =
+    ZIO.bracket{ZIO.effect{Source.fromFile(filePath)}}{x=>ZIO.effect{x.close()}.ignore} {fs=>
+    Task.effect{IniLex.parseMerged(fs.getLines().toList)}
   }
 
   def main(args: Array[String]): Unit = {
