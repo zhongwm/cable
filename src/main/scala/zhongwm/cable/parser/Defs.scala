@@ -305,7 +305,7 @@ object Defs {
         subGroups = topGroup :: subGroups
       }
       topGroup = topGroup.copy(children=subGroups.filterNot{sg => sg.groupName === topGroup.groupName})
-      // todo ¿¿¿
+      // Add hierarchical resolving here if plans to support hierarchical group
       topGroup
     }
   }
