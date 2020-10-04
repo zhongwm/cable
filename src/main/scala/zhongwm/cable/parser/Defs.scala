@@ -49,7 +49,11 @@ import scala.io.Source
 object Defs {
   case class AInventory()
 
-  case class AGroup(groupName: String, items: Map[String, AHost]=Map.empty, attrs: Map[String, Option[Any]]=Map.empty, parent: Option[AGroup]=None, children: List[AGroup]=Nil)
+  case class AGroup(groupName: String,
+                    items: Map[String, AHost] = Map.empty,
+                    attrs: Map[String, Option[Any]] = Map.empty,
+                    parent: Option[AGroup] = None,
+                    children: List[AGroup] = Nil)
 
   case class AHost(name: String, attrs: Map[String, Option[Any]])
 
@@ -84,7 +88,6 @@ object Defs {
   sealed trait PResult
   case class PRGroup(name: String, attrs: Map[String, Option[Any]]=Map.empty, items:Map[String, PRHostDef]=Map.empty) extends PResult
   case class PRHostDef(name: String, attrs: Map[String, Option[Any]]=Map.empty) extends PResult
-//  case class PRGroupVars(group: PRGroup) extends PResult
 
   case class ParseFailure[A](msg: String, maybeParseFail: Option[Fail[A]])// extends PResult
 
@@ -307,7 +310,9 @@ object Defs {
       if (topGroupOpt.isEmpty) {
         subGroups = topGroup :: subGroups
       }
-      topGroup = topGroup.copy(children=subGroups.filterNot{sg => sg.groupName === topGroup.groupName})
+      val subgroupsNotTop = subGroups.filterNot { sg => sg.groupName === topGroup.groupName }map{g=>g.copy(parent=topGroup.some)}
+      
+      topGroup = topGroup.copy(children=subgroupsNotTop)
       // Add hierarchical resolving here if plans to support hierarchical group
       topGroup
     }

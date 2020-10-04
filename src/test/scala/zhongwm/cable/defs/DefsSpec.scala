@@ -61,6 +61,9 @@ class DefsSpec extends AnyWordSpec with should.Matchers {
     "ansible_become_exe=sudo"
   )
 
+  private val inventoryFiles = "ansible_playbooks/BACKUP_hostsfile_128_45.yml" ::
+    "ansible_playbooks/BACKUP_hostsfile_8_110.yml" :: Nil
+
 
   """ "[Group1]" """ should {
     "not be group vars" in {
@@ -95,6 +98,14 @@ class DefsSpec extends AnyWordSpec with should.Matchers {
     "be parsed normally" in {
       val parsedGroup = parseMerged(value3)
       println(parsedGroup)
+    }
+  }
+
+  "inventoryFiles" should {
+    "be parsed normally" in {
+      inventoryFiles.foreach{f=>
+        getClass.getClassLoader.getResource(f).getFile
+      }
     }
   }
 
