@@ -2,13 +2,14 @@ import sbt._
 
 object Dependencies {
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.1.1"
-  val akkaVersion = "2.6.9"
-  val akkaHttpVersion = "10.1.12"
+  val akkaVersion = "2.6.12"
+  val akkaHttpVersion = "10.2.3"
   val doobieVersion = "0.9.0"
   val scalazVersion = "7.3.2"
-  val catsVersion = "2.1.1"
+  val catsVersion = "2.3.1"
+  val kittensVersion = "2.2.1"
   val http4sVersion = "0.21.7"
-  val zioVersion = "1.0.1"
+  val zioVersion = "1.0.4-2"
   val circeVersion = "0.13.0"
   val ini4jVersion = "0.5.4"
 
@@ -21,11 +22,12 @@ object Dependencies {
     "com.typesafe.akka" %% "akka-distributed-data" % akkaVersion,
     "com.typesafe.akka" %% "akka-stream-typed" % akkaVersion,
     "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
+    "com.typesafe.akka" %% "akka-persistence-typed" % akkaVersion,
     "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
     "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test,
     //lightbend commercial stuff:
-    "com.lightbend.akka.management" %% "akka-management-cluster-bootstrap" % "1.0.8", //
-    "com.lightbend.akka.management" %% "akka-management-cluster-http" % "1.0.8",
+    "com.lightbend.akka.management" %% "akka-management-cluster-bootstrap" % "1.0.9", //
+    "com.lightbend.akka.management" %% "akka-management-cluster-http" % "1.0.9",
     "com.typesafe.akka" %% "akka-discovery" % akkaVersion,
     "com.lightbend.akka.discovery" %% "akka-discovery-consul" % "1.0.8",
 
@@ -58,6 +60,8 @@ object Dependencies {
 
     "org.typelevel" %% "cats-core" % catsVersion,
     "org.typelevel" %% "cats-free" % catsVersion,
+    
+    "org.typelevel" %% "kittens" % kittensVersion,
 
     "org.apache.sshd" % "sshd-netty" % "2.4.0",
     "com.jcraft" % "jsch" % "0.1.55",

@@ -55,35 +55,9 @@ object Defs {
                     parent: Option[AGroup] = None,
                     children: List[AGroup] = Nil)
 
-  case class AHost(name: String, attrs: Map[String, Option[Any]])
-
-  val TOP_GROUP_NAME = "all"
-
-  val predefinedAHostAttrs: Map[String, Option[Any]] = Map(
-    "ansible_connection" -> None,
-    "ansible_host" -> None,
-    "ansible_port" -> Some(22),
-    "ansible_user" -> Some("root"),
-    "ansible_password" -> None,
-    "ansible_ssh_private_key_file" -> None,
-    "ansible_ssh_common_args" -> None,
-    "ansible_sftp_extra_args" -> None,
-    "ansible_scp_extra_args" -> None,
-    "ansible_ssh_extra_args" -> None,
-    "ansible_ssh_pipelining" -> None,
-    "ansible_ssh_executable" -> Some("/usr/bin/ssh"),
-    "ansible_become" -> Some(true),
-    "ansible_become_method" -> Some("su"),
-    "ansible_become_user" -> Some("root"),
-    "ansible_become_password" -> None,
-    "ansible_become_exe" -> Some("sudo"),
-    "ansible_become_flags" -> Some("-HSn"),
-    "ansible_shell_type" -> None,
-    "ansible_python_interpreter" -> Some("/usr/bin/python"),
-    "ansible_ruby_interpreter" -> Some("/usr/bin/ruby"),
-    "ansible_perl_interpreter" -> Some("/usr/bin/perl"),
-    "ansible_shell_executable" -> Some("bin/sh"),
-  )
+  case class AHost(name: String, attrs: Map[String, Option[Any]], parent:Option[AGroup]=None) {
+    // def attr[A](n: String): Option[A] = if (attrs.isDefinedAt(n) && attrs.get(n).isInstanceOf[Option[A]] ) attrs(n).asInstanceOf[Option[A]] else None
+  }
 
   sealed trait PResult
   case class PRGroup(name: String, attrs: Map[String, Option[Any]]=Map.empty, items:Map[String, PRHostDef]=Map.empty) extends PResult
@@ -302,11 +276,13 @@ object Defs {
 
       // println(groups)
       var subGroups = groups.map{ pg =>
-        val aHosts = pg.items.map{ph => ph._1 -> AHost(ph._1, ph._2.attrs)}
-        AGroup(pg.name, items=aHosts, attrs=pg.attrs)
+        var ag = AGroup(pg.name, items=Map.empty, attrs=pg.attrs)
+        val aHosts = pg.items.map{ph => ph._1 -> AHost(ph._1, ph._2.attrs, ag.some)}
+        ag = ag.copy(items=aHosts)
+        ag
       }
-      var topGroupOpt = subGroups.find(_.groupName == TOP_GROUP_NAME)
-      var topGroup = if (topGroupOpt.isDefined) topGroupOpt.get else AGroup(TOP_GROUP_NAME)
+      var topGroupOpt = subGroups.find(_.groupName == HigherGroupHosts.TOP_GROUP_NAME)
+      var topGroup = if (topGroupOpt.isDefined) topGroupOpt.get else AGroup(HigherGroupHosts.TOP_GROUP_NAME)
       if (topGroupOpt.isEmpty) {
         subGroups = topGroup :: subGroups
       }

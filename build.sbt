@@ -38,12 +38,19 @@ publishTo := Some(
 
 ///////////
 // Resolvers, use sftp, comment out if not used.
-val sftpResolver = Resolver.sftp("h101", "172.16.8.101", "/tmp/repo/")
+val sftpResolver = Resolver.sftp("sftphost", sys.env.getOrElse("sftpmvnhost", "localhost"), "/tmp/repo/")
 resolvers += sftpResolver
 publishTo := Some(sftpResolver)
 ///////////
 
 
-scalaVersion := "2.13.3"
-
+scalaVersion := "2.13.4"
+addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full)
+addCompilerPlugin("org.typelevel" % "kind-projector" % "0.11.3" cross CrossVersion.full)
+libraryDependencies ++= (scalaBinaryVersion.value match {
+    case "2.10" =>
+        compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full) :: Nil
+    case _ =>
+        Nil
+})
 libraryDependencies ++= commonDependencies ++ scalazDependencies

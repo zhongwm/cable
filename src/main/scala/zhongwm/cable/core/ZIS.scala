@@ -30,40 +30,56 @@
  * by Zhongwenming<br>
  */
 
-package zhongwm.cable.defs
-import zhongwm.cable.parser.Defs._
+package zhongwm.cable.core
+import java.io.{ByteArrayInputStream, FileInputStream}
+
 import cats._
-import cats.data._
 import cats.implicits._
-import zio.test._
+import zio._
+import zio.stream._
 import zio.console._
-import Assertion._
 
-object InilexTest {
-  private val inventoryFiles = "ansible_playbooks/BACKUP_hostsfile_128_45.yml" ::
-    "ansible_playbooks/BACKUP_hostsfile_8_110.yml" :: Nil
+object ZIS {
+  def main(args: Array[String]): Unit = {
+    case class Exam(person: String, score: Int)
 
-  private[defs] val inilexSuite = suite("inilex") (
-    inventoryFiles.map { f =>
-      testM(s"parsing a normal inventory ini file $f should be get some groups and hosts") {
-        assertM(readInventoryFile(getClass.getClassLoader.getResource(f).getFile))(hasField("groupName", (ag: AGroup) => ag.groupName, equalTo("all")))
-      }
-    }: _*
-  )
 
-  private[defs] val  inilexSuite2 = suite("inilexWithInspect")(
-    inventoryFiles.map {f =>
-      testM(s"Parsing a normal inventory ini file $f should return some meaningful groups") {
-        for {
-        ag <- readInventoryFile(getClass.getClassLoader.getResource(f).getFile)
-        _ <-  putStrLn(pprint.tokenize(ag).mkString)
-        } yield assert(ag.groupName)(equalTo("all"))
-      }
-    }: _*
-  )
-}
 
-object AllSuites extends DefaultRunnableSpec {
-  import InilexTest._
-  def spec = suite("All tests")(inilexSuite, inilexSuite2)
+    val examResults = Seq(
+      Exam("Alex", 64),
+      Exam("Michael", 97),
+      Exam("Bill", 77),
+      Exam("John", 78),
+      Exam("Bobby", 71)
+    )
+
+    val groupByKeyResult: ZStream[Any, Nothing, (Int, Int)] =
+      Stream
+        .fromIterable(examResults)
+        .groupByKey(exam => exam.score / 10 * 10) {
+          case (k, s) => Stream.fromEffect(s.runCollect.map(l => k -> l.size))
+        }
+
+    val s = Stream.fromInputStream(new FileInputStream("/tmp/adobedebug.log"))
+
+    val data = Seq("lines", "sdf", "dfs").mkString("\n")
+    Chunk(data)
+
+    val t = s.transduce(Transducer.utf8Decode)
+    val t2 = t.transduce(Transducer.splitLines)
+    val t3 = t2.mapConcatChunk(Chunk(_))
+    val t2_2 = t2.tap(data =>putStrLn(data)) //.partition(isError, 4)
+    /*
+    ZTransducer.splitLines.push.use {push =>
+      for {
+      x <- push(Chunk(data).some)
+      } yield()
+
+    }*/
+
+    val groupedResult: ZStream[Any, Nothing, Chunk[Int]] =
+      Stream
+        .fromIterable(0 to 100)
+        .grouped(50)
+  }
 }
