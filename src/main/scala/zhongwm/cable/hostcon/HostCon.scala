@@ -72,7 +72,7 @@ class SshConn(val /*host: Option[String],
           case Left(pair) =>
             _client.connect(username.getOrElse("root"), pair._1, pair._2)
           case Right(sock) =>
-            _client.connect(username.getOrElse("root"), sock)
+            _client.connect(username.getOrElse("root"), sock.toInetSocketAddress)
         }
         val session = connFuture.verify(8000).getSession
 
@@ -136,6 +136,7 @@ class SshConn(val /*host: Option[String],
   def scriptM(cmd: String)(cs: ClientSession) =
     for {
       setup <- effectBlocking {
+        println(s"Executing command $cmd")
           val ch = cs.createExecChannel(cmd)
           ch.setUsePty(false)
           val pos = new PipedOutputStream
@@ -197,7 +198,7 @@ class SshConn(val /*host: Option[String],
         val scpCreator = ScpClientCreator.instance()
         val sc = scpCreator.createScpClient(cs)
         // doo stuff here.
-        sc
+        sc.upload(path, "/tmp")
       }
     } yield sc
 }
@@ -226,8 +227,8 @@ object SshConn {
       }.either
     }
 
-  def io(addr: Either[(String, Int), SshdSocketAddress], username: Option[String] = Some("root"), password: Option[String] = None): UIO[SshConn] = {
-    IO.succeed(new SshConn(addr, username, password))
+  def io(addr: Either[(String, Int), SshdSocketAddress], username: Option[String] = Some("root"), password: Option[String] = None, privateKey: Option[KeyPair] = None): UIO[SshConn] = {
+    IO.succeed(new SshConn(addr, username, password, privateKey))
   }
 
   def localForwarder(targetIp: String, targetPort: Int)(cs: ClientSession): ZIO[Blocking, IOException, ExplicitPortForwardingTracker] =
@@ -269,7 +270,7 @@ object SshConn {
   def main(args: Array[String]): Unit = {
 
     val runtime2 = Runtime.unsafeFromLayer(ZEnv.live >+> clientZLayer)
-    val conn     = new SshConn(Left("172.16.8.103", 22), password = Some("~!@QWE"))
+    val conn     = new SshConn(Left("192.168.99.100", 2022), password = Some("test"), username = Some("test"))
     val result: (Int, (Chunk[String], Chunk[String])) = runtime2.unsafeRun(conn.sessionM(conn.scriptM(/*"ls /;exit\n"*/"ls -l /")).catchAll(e=>ZIO.succeed(3, (Chunk(""), Chunk(s"${e.getMessage}")))))
     runtime2.shutdown()
     println(result._1)
