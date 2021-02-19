@@ -90,7 +90,7 @@ class SshConn(val /*host: Option[String],
         .bracket { x =>
           ZIO.effectTotal {
             x.close()
-            println("Closed session")
+            println("Session closed")
           }
         } {
           routine(_)
@@ -157,7 +157,7 @@ class SshConn(val /*host: Option[String],
           case ex =>
             new IOException("Non-IOException made IOE", ex)
         }
-      outS <- ZIO.bracket{ZIO.succeed(setup)}
+      outS <- (ZIO.bracket{ZIO.succeed(setup)}
         { c =>
           putStrLn("CLOSING THINGS") *>
           ZIO.effect{
@@ -178,6 +178,11 @@ class SshConn(val /*host: Option[String],
           val ss1 = Stream.fromInputStream(ct._3).aggregate(Transducer.utf8Decode).aggregate(Transducer.splitLines).mapM { v => putStr("&&&&&&") *> putStrLn(v) *> UIO.succeed(v) }// .schedule(Schedule.fixed(100.milliseconds))
           val ss2 = Stream.fromInputStream(ct._5).aggregate(Transducer.utf8Decode).aggregate(Transducer.splitLines).mapM { v => putStr("******") *> putStrLn(v) *> UIO.succeed(v) }
           ss1.runCollect <*> ss2.runCollect // ss1.merge(ss2).runCollect
+        } ).mapError{
+          case e: IOException =>
+            e
+          case t: Throwable =>
+            new IOException(t)
         }
       _ <- putStrLn("begin receiving from reactive streams") *> mapToIOE(effectBlocking {
         println("waiting for event.")
@@ -199,6 +204,11 @@ class SshConn(val /*host: Option[String],
         val sc = scpCreator.createScpClient(cs)
         // doo stuff here.
         sc.upload(path, "/tmp")
+      } mapError {
+        case e: IOException =>
+          e
+        case t: Throwable =>
+          new IOException(t)
       }
     } yield sc
 }

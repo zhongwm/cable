@@ -34,8 +34,8 @@ package zhongwm.cable.hostcon
 import org.apache.sshd.client.SshClient
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfter
-import zhongwm.cable.hostcon.syntax.Stc.HostConn
 import zio._
+import zio.console._
 
 class HostConSpec extends AnyWordSpec with BeforeAndAfter {
   val runtime: Runtime.Managed[zio.ZEnv with Has[SshClient]] =
@@ -84,19 +84,14 @@ class HostConSpec extends AnyWordSpec with BeforeAndAfter {
                   password = Some("test")
                 )
                 conn.sessionM { ss =>
-                  conn.scriptM("hostname")(ss).mapError {
-                    case e: java.io.IOException =>
-                      e
-                    case t: Throwable =>
-                      new java.io.IOException(t)
-                  }
+                  conn.scriptM("hostname")(ss) <&> conn.scpUploadM("build.sbt")(ss)
                 }
               }
           }
-          _ <- zio.console.putStrLn(rst._2._1.mkString)
-          _ <- zio.console.putStrLn(rst._2._1.mkString)
-          xc <- ZIO.effect {
-            zio.ExitCode(rst._1)
+          _ <- putStrLn(rst._1._2._1.mkString)
+          _ <- putStrLn(rst._1._2._2.mkString)
+          xc <- ZIO.succeed {
+            zio.ExitCode(rst._1._1)
           }
         } yield (xc)
         runtime.unsafeRun(process)
