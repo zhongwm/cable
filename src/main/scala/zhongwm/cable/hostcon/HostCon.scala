@@ -34,6 +34,7 @@ package zhongwm.cable.hostcon
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, FileInputStream, IOException, OutputStream, PipedInputStream, PipedOutputStream}
 import java.net.SocketAddress
 import java.nio.charset.StandardCharsets
+import java.nio.file.Paths
 import java.security.{KeyPair, PublicKey}
 import java.util
 
@@ -133,7 +134,7 @@ class SshConn(val /*host: Option[String],
       new IOException("Non-IOException made IOE", ex)
   }
 
-  def scriptM(cmd: String)(cs: ClientSession) =
+  def script(cmd: String)(cs: ClientSession) =
     for {
       setup <- effectBlocking {
         println(s"Executing command $cmd")
@@ -196,20 +197,23 @@ class SshConn(val /*host: Option[String],
 //  _ <- ZIO.effect{cs.create}
 //  }
 
-  // TODO
-  def scpUploadM(path: String)(cs: ClientSession) =
+  def scpUpload(path: String, targetPath: Option[String] = None)(cs: ClientSession) =
     for {
-      sc <- ZIO.effect {
+      sc <- mapToIOE(ZIO.effect {
         val scpCreator = ScpClientCreator.instance()
         val sc = scpCreator.createScpClient(cs)
         // doo stuff here.
-        sc.upload(path, "/tmp")
-      } mapError {
-        case e: IOException =>
-          e
-        case t: Throwable =>
-          new IOException(t)
-      }
+        sc.upload(path, targetPath.getOrElse("/tmp"))
+      })
+    } yield sc
+
+  def scpDownload(path: String, targetPath: Option[String] = None)(cs: ClientSession) =
+    for {
+      sc <- mapToIOE(ZIO.effect {
+        val scpCreator = ScpClientCreator.instance()
+        val sc = scpCreator.createScpClient(cs)
+        sc.download(path, Paths.get("."))
+      })
     } yield sc
 }
 
@@ -281,7 +285,7 @@ object SshConn {
 
     val runtime2 = Runtime.unsafeFromLayer(ZEnv.live >+> clientZLayer)
     val conn     = new SshConn(Left("192.168.99.100", 2022), password = Some("test"), username = Some("test"))
-    val result: (Int, (Chunk[String], Chunk[String])) = runtime2.unsafeRun(conn.sessionM(conn.scriptM(/*"ls /;exit\n"*/"ls -l /")).catchAll(e=>ZIO.succeed(3, (Chunk(""), Chunk(s"${e.getMessage}")))))
+    val result: (Int, (Chunk[String], Chunk[String])) = runtime2.unsafeRun(conn.sessionM(conn.script(/*"ls /;exit\n"*/"ls -l /")).catchAll(e=>ZIO.succeed(3, (Chunk(""), Chunk(s"${e.getMessage}")))))
     runtime2.shutdown()
     println(result._1)
     println(result._2._1.toList.mkString("\n"))

@@ -57,7 +57,7 @@ class HostConSpec extends AnyWordSpec with BeforeAndAfter {
 
       val result: (Int, (Chunk[String], Chunk[String])) = runtime.unsafeRun(
         conn
-          .sessionM(conn.scriptM( /*"ls /;exit\n"*/ "ls -l /"))
+          .sessionM(conn.script( /*"ls /;exit\n"*/ "ls -l /"))
           .catchAll(e => ZIO.succeed(3, (Chunk(""), Chunk(s"${e.getMessage}"))))
       )
 
@@ -72,19 +72,15 @@ class HostConSpec extends AnyWordSpec with BeforeAndAfter {
       "be ok" in {
         val process = for {
           connJump <- SshConn.io(
-            Left("192.168.99.100", 2022),
-            password = Some("test"),
-            username = Some("test"),
+            Left("192.168.99.100", 2022), username = Some("test"), password = Some("test"),
           )
           rst <- connJump.sessionM { s =>
             SshConn.localForwarder("192.168.99.100", 2023)(s) >>= {fwd=>
-                val conn = new SshConn(
-                  Right(fwd.getBoundAddress),
-                  Some("test"),
-                  password = Some("test")
-                )
-                conn.sessionM { ss =>
-                  conn.scriptM("hostname")(ss) <&> conn.scpUploadM("build.sbt")(ss)
+                val conn = new SshConn(Right(fwd.getBoundAddress), Some("test"), password = Some("test"))
+                conn.sessionM { nestedSession =>
+                  conn.script("hostname")(nestedSession) <&>
+                    conn.scpUpload("build.sbt")(nestedSession) <&
+                    conn.scpDownload("/etc/issue")(nestedSession)
                 }
               }
           }
