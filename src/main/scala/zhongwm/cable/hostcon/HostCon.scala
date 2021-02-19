@@ -98,6 +98,28 @@ class SshConn(val /*host: Option[String],
         }
     }) yield _sess
 
+
+  def withJump[A](targetIp: String, targetPort: Int, jumpWork: ZIO[Has[ExplicitPortForwardingTracker], IOException, A]) = {
+    val jLayer = ZLayer.fromManaged(ZManaged.make{
+      for {
+        cs <- ZIO.environment[Has[ClientSession]]/* Counter part: ZIO[_, _, _].toLayer */
+      // cs <- ZIO.accessM[Has[ClientSession]]{x => UIO(x.get)}
+        fwd <- mapToIOE(effectBlocking {
+          val localFwTracker = cs.get.createLocalPortForwardingTracker(
+            SshdSocketAddress.LOCALHOST_ADDRESS,
+            new SshdSocketAddress(targetIp, targetPort)
+          )
+          val address = localFwTracker.getBoundAddress
+          println(s"Local forward is open, ${localFwTracker.isOpen}")
+          println(s"Local bound address: ${address}")
+          println(s"Local address: ${localFwTracker.getBoundAddress}")
+          localFwTracker
+        })
+      } yield fwd
+    }(j => ZIO.effect(j.close()).either))
+    jumpWork.provideLayer(jLayer)
+  }
+
   def shellM(cmd: String)(cs: ClientSession) =
     for {cmdOutput <- ZIO
       .effect(cs.createShellChannel())
