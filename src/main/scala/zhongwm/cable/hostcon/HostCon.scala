@@ -254,7 +254,7 @@ object SshConn {
           new SshdSocketAddress(targetIp, targetPort)
         )
         val address = localFwTracker.getBoundAddress
-
+        // TODO localFwTracker.close()  somewhere
         println(s"Local forward is open, ${localFwTracker.isOpen}")
         println(s"Local bound address: ${address}")
         println(s"Local address: ${localFwTracker.getBoundAddress}")
