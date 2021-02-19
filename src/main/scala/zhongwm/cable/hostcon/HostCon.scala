@@ -245,7 +245,7 @@ object SshConn {
     IO.succeed(new SshConn(addr, username, password, privateKey))
   }
 
-  def localForwarder(targetIp: String, targetPort: Int)(cs: ClientSession): ZIO[Blocking, IOException, ExplicitPortForwardingTracker] =
+  def jumpTo(targetIp: String, targetPort: Int)(cs: ClientSession): ZIO[Blocking, IOException, ExplicitPortForwardingTracker] =
     for {
       ch <- effectBlocking {
 

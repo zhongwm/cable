@@ -74,13 +74,13 @@ class HostConSpec extends AnyWordSpec with BeforeAndAfter {
           connJump <- SshConn.io(
             Left("192.168.99.100", 2022), username = Some("test"), password = Some("test"),
           )
-          rst <- connJump.sessionM { s =>
-            SshConn.localForwarder("192.168.99.100", 2023)(s) >>= {fwd=>
+          rst <- connJump.sessionM { outerSession =>
+            SshConn.jumpTo("192.168.99.100", 2023)(outerSession) >>= {fwd=>
                 val conn = new SshConn(Right(fwd.getBoundAddress), Some("test"), password = Some("test"))
-                conn.sessionM { nestedSession =>
-                  conn.script("hostname")(nestedSession) <&>
-                    conn.scpUpload("build.sbt")(nestedSession) <&
-                    conn.scpDownload("/etc/issue")(nestedSession)
+                conn.sessionM { innerSession =>
+                  conn.script("hostname")(innerSession) <&>
+                    conn.scpUpload("build.sbt")(innerSession) <&
+                    conn.scpDownload("/etc/issue")(innerSession)
                 }
               }
           }
