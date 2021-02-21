@@ -32,7 +32,7 @@
 
 package zhongwm.cable.hostcon
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, FileInputStream, IOException, OutputStream, PipedInputStream, PipedOutputStream}
-import java.net.SocketAddress
+import java.net.{InetSocketAddress, SocketAddress}
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 import java.security.{KeyPair, PublicKey}
@@ -99,25 +99,51 @@ class SshConn(val /*host: Option[String],
     }) yield _sess
 
 
-  def withJump[A](targetIp: String, targetPort: Int, jumpWork: ZIO[Has[ExplicitPortForwardingTracker], IOException, A]) = {
-    val jLayer = ZLayer.fromManaged(ZManaged.make{
-      for {
-        cs <- ZIO.environment[Has[ClientSession]]/* Counter part: ZIO[_, _, _].toLayer */
+  def withSessionM[A](routine: ZIO[Has[ClientSession], IOException, A]) = routine provideLayer sessionLayer
+
+  def sessionLayer = ZLayer.fromManaged(ZManaged.make(for {
+    hasCli <- ZIO.environment[Has[SshClient]]
+    sess   <- mapToIOE{effectBlocking {
+      val _client = hasCli.get
+      val connFuture = connInfo match {
+        case Left(pair) =>
+          _client.connect(username.getOrElse("root"), pair._1, pair._2)
+        case Right(sock) =>
+          _client.connect(username.getOrElse("root"), sock.toInetSocketAddress)
+      }
+      val session = connFuture.verify(8000).getSession
+
+      password.foreach(session.addPasswordIdentity)
+      privateKey.foreach(session.addPublicKeyIdentity)
+      session.auth().verify()
+      session
+    }}} yield sess){ s=>
+    ZIO.effectTotal(s.close())
+  })
+
+  def jumpLayer(targetIp: String, targetPort: Int) = ZLayer.fromAcquireRelease{
+    for {
+      cs <- ZIO.environment[Has[ClientSession]]/* Counter part: ZIO[_, _, _].toLayer */
       // cs <- ZIO.accessM[Has[ClientSession]]{x => UIO(x.get)}
-        fwd <- mapToIOE(effectBlocking {
-          val localFwTracker = cs.get.createLocalPortForwardingTracker(
-            SshdSocketAddress.LOCALHOST_ADDRESS,
-            new SshdSocketAddress(targetIp, targetPort)
-          )
-          val address = localFwTracker.getBoundAddress
-          println(s"Local forward is open, ${localFwTracker.isOpen}")
-          println(s"Local bound address: ${address}")
-          println(s"Local address: ${localFwTracker.getBoundAddress}")
-          localFwTracker
-        })
-      } yield fwd
-    }(j => ZIO.effect(j.close()).either))
-    jumpWork.provideLayer(jLayer)
+      fwd <- mapToIOE(effectBlocking {
+        val localFwTracker = cs.get.createLocalPortForwardingTracker(
+          SshdSocketAddress.LOCALHOST_ADDRESS,
+          new SshdSocketAddress(targetIp, targetPort)
+        )
+        val address = localFwTracker.getBoundAddress
+        println(s"Local forward is open, ${localFwTracker.isOpen}")
+        println(s"Local bound address: ${address}")
+        println(s"Local address: ${localFwTracker.getBoundAddress}")
+        localFwTracker
+      })
+    } yield fwd
+  }(j => ZIO.effect(j.close()).either)
+
+  def jumpAddressLayer(targetIp: String, targetPort: Int) = jumpLayer(targetIp, targetPort) >>>
+    ZLayer.fromFunction((x: Has[ExplicitPortForwardingTracker]) => x.get.getBoundAddress)
+
+  def withJumpM[A](targetIp: String, targetPort: Int, jumpWork: ZIO[Has[SshdSocketAddress], IOException, A]) = jumpWork provideLayer {
+    jumpAddressLayer(targetIp, targetPort)
   }
 
   def shellM(cmd: String)(cs: ClientSession) =
@@ -155,6 +181,11 @@ class SshConn(val /*host: Option[String],
     case ex =>
       new IOException("Non-IOException made IOE", ex)
   }
+
+  def scriptIO(cmd: String) = for {
+    cs <- ZIO.environment[Has[ClientSession]]
+    r <-  script(cmd)(cs.get)
+  } yield r
 
   def script(cmd: String)(cs: ClientSession) =
     for {
@@ -219,6 +250,11 @@ class SshConn(val /*host: Option[String],
 //  _ <- ZIO.effect{cs.create}
 //  }
 
+  def scpUploadIO(path: String, targetPath: Option[String] = None) = for {
+    cs <- ZIO.environment[Has[ClientSession]]
+    r  <- scpUpload(path, targetPath)(cs.get)
+  } yield r
+
   def scpUpload(path: String, targetPath: Option[String] = None)(cs: ClientSession) =
     for {
       sc <- mapToIOE(ZIO.effect {
@@ -228,6 +264,11 @@ class SshConn(val /*host: Option[String],
         sc.upload(path, targetPath.getOrElse("/tmp"))
       })
     } yield sc
+
+  def scpDownloadIO(path: String, targetPath: Option[String] = None) = for {
+    cs <- ZIO.environment[Has[ClientSession]]
+    r  <- scpDownload(path, targetPath)(cs.get)
+  } yield r
 
   def scpDownload(path: String, targetPath: Option[String] = None)(cs: ClientSession) =
     for {

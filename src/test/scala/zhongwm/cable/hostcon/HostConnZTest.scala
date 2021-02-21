@@ -32,10 +32,15 @@
 
 package zhongwm.cable.hostcon
 
+import java.net.InetSocketAddress
+
 import zio._
 import zio.test._
 import zio.test.environment.Live
 import Assertion._
+import org.apache.sshd.client.session.ClientSession
+import org.apache.sshd.client.session.forward.ExplicitPortForwardingTracker
+import org.apache.sshd.common.util.net.SshdSocketAddress
 import zio.console.putStrLn
 import zio.test.{DefaultRunnableSpec, ZSpec}
 
@@ -53,6 +58,27 @@ object HostConnZTest {
             conn.scpDownload("/etc/issue")(innerSession)
         }
       }
+    }
+    _ <- putStrLn(rst._1._2._1.mkString)
+    _ <- putStrLn(rst._1._2._2.mkString)
+    xc <- ZIO.succeed {
+      zio.ExitCode(rst._1._1)
+    }
+  } yield (xc)
+
+  private val processZ = for {
+    connJump <- SshConn.io(
+      Left("192.168.99.100", 2022), username = Some("test"), password = Some("test"),
+    )
+    rst <- connJump.withSessionM {
+      connJump.withJumpM("192.168.99.100", 2023, ZIO.environment[Has[SshdSocketAddress]] >>= { fwd =>
+        val conn = new SshConn(Right(fwd.get), Some("test"), password = Some("test"))
+        val action = conn.scriptIO("hostname") <&>
+          conn.scpUploadIO("build.sbt") <&
+          conn.scpDownloadIO("/etc/issue")
+        val actionTrans = action.provideSomeLayer(SshConn.clientZLayer >+> conn.sessionLayer)
+          //).compose(ZIO.accessM[Has[ClientSession]]{x=>ZIO.succeed(x.get)})
+      })
     }
     _ <- putStrLn(rst._1._2._1.mkString)
     _ <- putStrLn(rst._1._2._2.mkString)
