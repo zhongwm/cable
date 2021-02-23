@@ -31,6 +31,9 @@
 /* Written by Wenming Zhong */
 
 package zhongwm.cable.hostcon
+import java.io.IOException
+
+import org.apache.sshd.client.session.ClientSession
 import zio._
 import zio.blocking._
 import zio.console._
@@ -41,19 +44,22 @@ object SshConnZTest2 {
       SshConn.scpUploadIO("build.sbt") <&
       SshConn.scpDownloadIO("/etc/issue")
 
-  val layer1 =
-    ((Blocking.live ++ SshConn.clientLayer) >>>
-      SshConn.sessionL(
+  val jumperLayer = SshConn.sessionL(
         new SshConn(Left("192.168.99.100", 2022), username = Some("test"), password = Some("test"))
-      )) ++ Blocking.live
+      )
 
+  val jumpedLayer =
+    SshConn.jumpSessionL(jumperLayer, "192.168.99.100", 2023, "test", Some("test"))
+
+
+  
   val layer2 =
-    (layer1 >>> SshConn.jumpAddressLayer("192.168.99.100", 2023)) ++ Blocking.live
+    ((jumperLayer ++ Blocking.live) >>> SshConn.jumpAddressLayer("192.168.99.100", 2023)) ++ Blocking.live
 
-  val layer3 =
-    (layer2 >>> SshConn.jumpSshConnL(Some("test"), Some("test"))) ++ Blocking.live
+  val layer3 = layer2 >>> SshConn.jumpSshConnL(Some("test"), Some("test"))
 
-  val layer4 = (SshConn.clientLayer ++ layer3) >>> SshConn.sessionL
+  val layer4 = (SshConn.clientLayer ++ layer3 ++ Blocking.live) >>> SshConn.sessionL
+
 
   private val process = for {
     connJump <- SshConn.make(
@@ -79,6 +85,6 @@ object SshConnZTest2 {
   } yield (xc)
 
   def main(args: Array[String]): Unit =
-    Runtime.default.unsafeRun(action.provideCustomLayer(layer4))
+    Runtime.default.unsafeRun(action.provideCustomLayer(jumpedLayer))
 
 }

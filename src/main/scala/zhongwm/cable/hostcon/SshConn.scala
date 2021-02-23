@@ -186,7 +186,7 @@ object SshConn {
     IO.succeed(new SshConn(addr, username, password, privateKey))
 
   def sessionL(sshConn: SshConn) =
-    ZLayer.fromAcquireRelease(ZIO.environment[Has[SshClient]] >>= { cli =>
+    (clientLayer ++ Blocking.live) >>> ZLayer.fromAcquireRelease(ZIO.environment[Has[SshClient]] >>= { cli =>
       effectBlocking {
         val _client = cli.get
         val connFuture = sshConn.connInfo match {
@@ -216,7 +216,7 @@ object SshConn {
     }
 
   val sessionL = ZLayer.fromManaged(ZManaged.make(ZIO.environment[Has[SshClient] with Has[SshConn]] >>= { r =>
-    effectBlocking {
+    mapToIOE(effectBlocking {
       val _client = r.get[SshClient]
       val sshConn = r.get[SshConn]
       val connFuture = sshConn.connInfo match {
@@ -231,7 +231,7 @@ object SshConn {
       sshConn.privateKey.foreach(session.addPublicKeyIdentity)
       session.auth().verify()
       session
-    }
+    })
   }) { x =>
     ZIO.effectTotal {
       x.close()
@@ -270,11 +270,15 @@ object SshConn {
     jumpLayer(targetIp, targetPort) >>>
       ZLayer.fromFunction((x: Has[ExplicitPortForwardingTracker]) => x.get.getBoundAddress)
 
-  def jumpSessionL(username: Option[String], password: Option[String] = None, privateKey: Option[KeyPair] = None) =
-    ZLayer.fromManaged(ZManaged.fromEffect(ZIO.environment[Has[SshdSocketAddress]] >>= { m =>
-      val l = sessionL(new SshConn(Right(m.get[SshdSocketAddress]), username, password, privateKey))
-      l.build.use(ZIO.effect(_))
-    }))
+  def jumpSessionL(
+        zl: ZLayer[Blocking, IOException, Has[ClientSession]],
+        host: String, port: Int,
+        username: String,
+        password: Option[String] = None,
+        privateKey: Option[KeyPair] = None) =
+    ((((Blocking.live ++ zl) >>> jumpAddressLayer(host, port) ++ Blocking.live) >>>
+      jumpSshConnL(Some(username), password, privateKey)) ++ Blocking.live ++ clientLayer) >>>
+        sessionL
 
   def jumpSshConnL(username: Option[String], password: Option[String] = None, privateKey: Option[KeyPair] = None) =
     ZLayer.fromService { a: SshdSocketAddress =>
