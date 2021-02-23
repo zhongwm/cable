@@ -36,16 +36,11 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfter
 import zio._
 import zio.console._
+import SshConn._
 
-class HostConSpec extends AnyWordSpec with BeforeAndAfter {
-  val runtime: Runtime.Managed[zio.ZEnv with Has[SshClient]] =
-    Runtime.unsafeFromLayer(ZEnv.live >+> SshConn.clientZLayer)
-
-  before {}
-
-  after {
-    runtime.shutdown()
-  }
+class SshConSpec extends AnyWordSpec with BeforeAndAfter {
+  var runtime: Runtime.Managed[zio.ZEnv with Has[SshClient]] =
+    Runtime.unsafeFromLayer(ZEnv.live >+> SshConn.clientLayer)
 
   "SshConn" when {
     "Connecting to ssh host" should {
@@ -57,7 +52,7 @@ class HostConSpec extends AnyWordSpec with BeforeAndAfter {
 
       val result: (Int, (Chunk[String], Chunk[String])) = runtime.unsafeRun(
         conn
-          .sessionM(conn.script( /*"ls /;exit\n"*/ "ls -l /"))
+          .sessionM(script( /*"ls /;exit\n"*/ "ls -l /"))
           .catchAll(e => ZIO.succeed(3, (Chunk(""), Chunk(s"${e.getMessage}"))))
       )
 
@@ -71,16 +66,16 @@ class HostConSpec extends AnyWordSpec with BeforeAndAfter {
     "Connecting to ssh host monadic" should {
       "be ok" in {
         val process = for {
-          connJump <- SshConn.io(
+          connJump <- SshConn.make(
             Left("192.168.99.100", 2022), username = Some("test"), password = Some("test"),
           )
           rst <- connJump.sessionM { outerSession =>
             SshConn.jumpTo("192.168.99.100", 2023)(outerSession) >>= {fwd=>
                 val conn = new SshConn(Right(fwd.getBoundAddress), Some("test"), password = Some("test"))
                 conn.sessionM { innerSession =>
-                  conn.script("hostname")(innerSession) <&>
-                    conn.scpUpload("build.sbt")(innerSession) <&
-                    conn.scpDownload("/etc/issue")(innerSession)
+                  script("hostname")(innerSession) <&>
+                    scpUpload("build.sbt")(innerSession) <&
+                    scpDownload("/etc/issue")(innerSession)
                 }
               }
           }

@@ -31,31 +31,38 @@
 /* Written by Wenming Zhong */
 
 package zhongwm.cable.hostcon
-
-import java.net.InetSocketAddress
-
 import zio._
-import zio.test._
-import zio.test.environment.Live
-import Assertion._
-import org.apache.sshd.client.session.ClientSession
-import org.apache.sshd.client.session.forward.ExplicitPortForwardingTracker
-import org.apache.sshd.common.util.net.SshdSocketAddress
-import zio.console.putStrLn
-import zio.test.{DefaultRunnableSpec, ZSpec}
+import zio.blocking._
+import zio.console._
 
-object HostConnZTest {
+
+object SshConnZTest2 {
+  val action = SshConn.scriptIO("hostname") <&>
+    SshConn.scpUploadIO("build.sbt") <&
+    SshConn.scpDownloadIO("/etc/issue")
+
+  val layer1 = ((Blocking.live ++ SshConn.clientLayer) >>>
+    SshConn.sessionL(new SshConn(Left("192.168.99.100", 2022), username = Some("test"), password = Some("test")))
+    ) ++ Blocking.live
+
+  val layer2 = (layer1 >>> SshConn.jumpAddressLayer("192.168.99.100", 2023)) ++ Blocking.live
+
+  val layer3 = (layer2 >>> SshConn.jumpSshConnL(Some("test"), Some("test"))) ++ Blocking.live
+
+  val layer4 = (SshConn.clientLayer ++ layer3) >>> SshConn.sessionL
+
+
   private val process = for {
-    connJump <- SshConn.io(
+    connJump <- SshConn.make(
       Left("192.168.99.100", 2022), username = Some("test"), password = Some("test"),
     )
     rst <- connJump.sessionM { outerSession =>
       SshConn.jumpTo("192.168.99.100", 2023)(outerSession) >>= {fwd=>
         val conn = new SshConn(Right(fwd.getBoundAddress), Some("test"), password = Some("test"))
         conn.sessionM { innerSession =>
-          conn.script("hostname")(innerSession) <&>
-            conn.scpUpload("build.sbt")(innerSession) <&
-            conn.scpDownload("/etc/issue")(innerSession)
+          SshConn.script("hostname")(innerSession) <&>
+            SshConn.scpUpload("build.sbt")(innerSession) <&
+            SshConn.scpDownload("/etc/issue")(innerSession)
         }
       }
     }
@@ -66,35 +73,8 @@ object HostConnZTest {
     }
   } yield (xc)
 
-  private val processZ = for {
-    connJump <- SshConn.io(
-      Left("192.168.99.100", 2022), username = Some("test"), password = Some("test"),
-    )
-    rst <- connJump.withSessionM {
-      connJump.withJumpM("192.168.99.100", 2023, ZIO.environment[Has[SshdSocketAddress]] >>= { fwd =>
-        val conn = new SshConn(Right(fwd.get), Some("test"), password = Some("test"))
-        val action = conn.scriptIO("hostname") <&>
-          conn.scpUploadIO("build.sbt") <&
-          conn.scpDownloadIO("/etc/issue")
-        val actionTrans = action.provideSomeLayer(SshConn.clientZLayer >+> conn.sessionLayer)
-          //).compose(ZIO.accessM[Has[ClientSession]]{x=>ZIO.succeed(x.get)})
-      })
-    }
-    _ <- putStrLn(rst._1._2._1.mkString)
-    _ <- putStrLn(rst._1._2._2.mkString)
-    xc <- ZIO.succeed {
-      zio.ExitCode(rst._1._1)
-    }
-  } yield (xc)
-
-  val assertProcess = suite("Jump ssh monadic") {
-    testM ("should be ok") {
-      assertM(process)(equalTo(ExitCode(0)))
-    }
+  def main(args: Array[String]): Unit = {
+    Runtime.default.unsafeRun(action.provideCustomLayer(layer4))
   }
-}
 
-object AllHostConnZTest extends DefaultRunnableSpec {
-  import HostConnZTest._
-  override def spec = suite("All tests")(assertProcess.provideSomeLayer(ZEnv.live >+> SshConn.clientZLayer))
 }
