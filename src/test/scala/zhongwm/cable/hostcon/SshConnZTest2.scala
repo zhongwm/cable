@@ -39,10 +39,12 @@ import zio.blocking._
 import zio.console._
 
 object SshConnZTest2 {
-  val action =
-    SshConn.scriptIO("hostname") <&>
-      SshConn.scpUploadIO("build.sbt") <&
-      SshConn.scpDownloadIO("/etc/issue")
+  val action = {
+    import SshConn._
+    scriptIO("hostname") <&>
+      scpUploadIO("build.sbt") <&
+      scpDownloadIO("/etc/issue")
+  }
 
   val jumperLayer = SshConn.sessionL(
         new SshConn(Left("192.168.99.100", 2022), username = Some("test"), password = Some("test"))
@@ -82,7 +84,7 @@ object SshConnZTest2 {
     xc <- ZIO.succeed {
             zio.ExitCode(rst._1._1)
           }
-  } yield (xc)
+  } yield xc
 
   def main(args: Array[String]): Unit =
     Runtime.default.unsafeRun(action.provideCustomLayer(jumpedLayer))
