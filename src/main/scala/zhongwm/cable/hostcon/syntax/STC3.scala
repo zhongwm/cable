@@ -34,6 +34,7 @@ package zhongwm.cable.hostcon.syntax
 
 import STC2._
 import cats.{Id, ~>}
+import zhongwm.cable.hostcon.SshConn
 import zio._
 
 object STC3 {
@@ -72,6 +73,39 @@ object STC3 {
 
   type Eval[A] =  Unit
 
+  // type HCE[A] = HFix[HostConnC, A]
+
+  def hostConn2HostConnC[C, A](hc: HFix[HostConn, A], initialCtx: C, f: HostConnInfo[_] => C): HCFix[HostConnC, C, A] = {
+    val unfix = hc.unfix
+
+    def hostConn2HostConnCInner[X](hc: List[HFix[HostConn, X]], parent: C): List[HCFix[HostConnC, C, X]] = { hc match {
+      case Nil =>
+        Nil
+      case x :: xs =>
+        hostConn2HostConnC(x, parent, f) :: hostConn2HostConnCInner(xs, parent)
+    }}
+    HCFix(HostConnC(initialCtx, unfix.hc, hostConn2HostConnCInner(unfix.nextLevel, f(unfix.hc))))
+  }
+
+  def hostConn2HostConnCFg[F[_[_], _], G[_[_], _, _], C, A](hc: HFix[F, A], parentCtx: C,
+                                                            deriveChildContext: HFix[F, A] => C,
+                                                            getList: HFix[F, A] => List[HFix[F, A]],
+                                                            getA: HFix[F, A] => A,
+                                                            ctor: (C, A, List[HCFix[G, C, A]]) => G[HCFix[G, C, *], C, A]
+                                                           ): HCFix[G, C, A] = {
+    val unfix = hc.unfix
+
+    def hostConn2HostConnCInner(hc: List[HFix[F, A]], parent: C): List[HCFix[G, C, A]] = { hc match {
+      case Nil =>
+        Nil
+      case x :: xs =>
+        hostConn2HostConnCFg(x, parent, deriveChildContext, getList, getA, ctor) :: hostConn2HostConnCInner(xs, parent)
+    }}
+    val asParentOfChildren = deriveChildContext(hc)
+     HCFix(ctor(parentCtx, getA(hc), hostConn2HostConnCInner(getList(hc), asParentOfChildren)))
+  }
+
+
   val exec: HAlgebra[HostConn, Eval] = new HAlgebra[HostConn, Eval] {
     override def apply[A](fa: HostConn[Eval, A]): Eval[A] = {
       fa.hc.action match {
@@ -83,7 +117,16 @@ object STC3 {
     }
   }
 
+
+//  val exec1: HAlgebra[HostConn, ]
+
   def main(args: Array[String]): Unit = {
+    val initCtx: Option[HostConnInfo[_]] = None
+    println(hostConn2HostConnC(d1, initCtx, Some(_)))
+
+    def getA[A](h: HostConn[Any, A]) = h.hc
+//    def getList[F, A](h: HostConn[F, A]): List[HFix[HostConn, *]] = h.nextLevel
+//    println(hostConn2HostConnCFg(d1, initCtx, {f => Some(getA(f.unfix))}, )
     hCata(exec, d1)
   }
 }

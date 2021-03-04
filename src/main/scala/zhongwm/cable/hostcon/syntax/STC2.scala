@@ -32,6 +32,13 @@
 
 package zhongwm.cable.hostcon.syntax
 
+import java.io.{Console, IOException}
+
+import org.apache.sshd.client.session.ClientSession
+import zio._
+import zio.console.{Console => ZConsole}
+import zio.blocking.Blocking
+
 object STC2 {
 
   sealed trait ScaAnsible[A]
@@ -45,9 +52,47 @@ object STC2 {
                              action: ScaAnsible[A])
   case class HostConn[F[_], T](hc: HostConnInfo[T], nextLevel: List[F[Any]])
 
-  case class HFix[F[_[_], _], A](unfix: F[HFix[F, *], A])
+  case class HostConnC[+F[_], C, T](parent: C, hc: HostConnInfo[T], nextLevel: List[F[Any]])
+  
+  /**
+   * `Nothing with Has[ClientSession]`, not `Any with Has[ClientSession]`
+   *
+   * And mixing a Nothing is required.
+   *
+   * {{{
+   *   implicitly[ZIO[Blocking with Has[ClientSession], IOException, String] <:< HostConnInfoMat[String]]
+   *   implicitly[ZIO[Has[ClientSession], IOException, String] <:< ZIO[Nothing with Has[ClientSession], IOException, String]]
+   *
+   *   implicitly[String with Any <:< String]
+   *   implicitly[String <:< String with Any]
+   *   implicitly[String =:= String with Any]
+   *   // implicitly[String =:= String with Nothing]// can't prove that
+   *
+   *   implicitly[Function[String, Any with Int] <:< Function[String, Int]]
+   *   implicitly[Function[String, Any with Int] =:= Function[String, Int]]
+   *
+   *   implicitly[Function[String, Int] <:< Function[Nothing with String, Int]]
+   *   // implicitly[Function[String, Int] =:= Function[Nothing with String, Int]] // can't prove that
+   *
+   *   case class AAA(v: HostConnInfoMat[String])
+   *   def aaa(p: ZIO[Int with Has[ClientSession], IOException, String]) = {
+   *     val hcim: HostConnInfoMat[String] = p
+   *   }
+   * }}}
+   *
+   * @tparam A
+   */
+  type HostConnInfoMat[A] = ZIO[Blocking with ZConsole with Has[ClientSession], IOException, A]
 
-  val d1 = HFix[HostConn, String](
+  type SessionLayer = ZLayer[Blocking, IOException, Has[ClientSession]]
+
+  case class HostConnMat[F[_], T](parentSessionL: Option[SessionLayer], sl: SessionLayer, hm: HostConnInfoMat[T], nextLevel: List[F[Any]])
+
+  case class HFix[F[_[_], _], A](unfix: F[HFix[F, *], A])
+  case class HCFix[F[_[_], _, _], C, A](unfix: F[HCFix[F, C, *], C, A])
+  case class HCDFix[F[_[_, _], _, _], C, A](unfix: F[Lambda[(C, D) => HCDFix[F, C, D]], C, A])
+
+  private[syntax] val d1 = HFix[HostConn, String](
     HostConn(
       HostConnInfo(
         "192.168.99.100",
