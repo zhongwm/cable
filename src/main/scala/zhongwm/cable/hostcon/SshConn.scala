@@ -31,15 +31,7 @@
  */
 
 package zhongwm.cable.hostcon
-import java.io.{
-  ByteArrayInputStream,
-  ByteArrayOutputStream,
-  FileInputStream,
-  IOException,
-  OutputStream,
-  PipedInputStream,
-  PipedOutputStream
-}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, FileInputStream, IOException, OutputStream, PipedInputStream, PipedOutputStream}
 import java.net.{InetSocketAddress, SocketAddress}
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
@@ -47,23 +39,17 @@ import java.security.{KeyPair, PublicKey}
 import java.util
 
 import org.apache.sshd.client.SshClient
-import org.apache.sshd.client.channel.{
-  ChannelExec,
-  ClientChannel,
-  ClientChannelEvent
-}
+import org.apache.sshd.client.channel.{ChannelExec, ClientChannel, ClientChannelEvent}
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier
 import org.apache.sshd.client.session.ClientSession
-import org.apache.sshd.client.session.forward.{
-  ExplicitPortForwardingTracker,
-  PortForwardingTracker
-}
+import org.apache.sshd.client.session.forward.{ExplicitPortForwardingTracker, PortForwardingTracker}
 import org.apache.sshd.common.future.CloseFuture
 import org.apache.sshd.common.util.net.SshdSocketAddress
 import cats._
 import cats.implicits._
 import org.apache.sshd.client.scp.ScpClientCreator
 import org.apache.sshd.common.channel.PtyMode
+import zhongwm.cable.core.LogbackConfig
 import zio._
 import zio.blocking._
 import zio.console._
@@ -153,6 +139,7 @@ class SshConn(
 }
 
 object SshConn {
+  LogbackConfig.configLogbackForLib()
   implicit val clientLayer: ZLayer[Blocking, Nothing, Has[SshClient]] =
     ZLayer fromManaged Managed.make {
       UIO.succeed {

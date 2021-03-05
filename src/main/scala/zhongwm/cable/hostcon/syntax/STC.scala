@@ -32,7 +32,7 @@
 
 package zhongwm.cable.hostcon.syntax
 
-import java.io.{Console, IOException}
+import java.io.IOException
 
 import org.apache.sshd.client.session.ClientSession
 import zio._

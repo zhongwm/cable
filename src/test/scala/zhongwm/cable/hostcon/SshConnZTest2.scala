@@ -51,7 +51,7 @@ object SshConnZTest2 {
       )
 
   val jumpedLayer =
-    SshConn.jumpSessionL(jumperLayer, "192.168.99.100", 2023, "test", Some("test"))
+    SshConn.jumpSessionL(jumperLayer, "192.168.99.100", 2023, Some("test"), Some("test"))
 
 
   
