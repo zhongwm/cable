@@ -33,6 +33,7 @@
 package zhongwm.cable.hostcon.syntax
 
 import java.io.IOException
+import java.security.KeyPair
 
 import org.apache.sshd.client.session.ClientSession
 import zio._
@@ -46,9 +47,9 @@ object STC {
 
   case class HostConnInfo[A](ho: String,
                              port: Int,
-                             userName: String = "root",
+                             userName: Option[String] = Some("root"),
                              password: Option[String],
-                             privKey: Option[String],
+                             privKey: Option[KeyPair],
                              action: ScaAnsible[A])
   case class HostConn[F[_], T](hc: HostConnInfo[T], nextLevel: List[F[Any]])
 
@@ -92,12 +93,16 @@ object STC {
   case class HCFix[F[_[_], _, _], C, A](unfix: F[HCFix[F, C, *], C, A])
   case class HCDFix[F[_[+_, +_], +_, +_], +C, +A](unfix: F[λ[(+[C], +[D]) => HCDFix[F, C, D]], C, A])
 
+  def ssh[A](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], action: => A, children: HFix[HostConn, Any]*): HFix[HostConn, A] = {
+    HFix(HostConn(HostConnInfo(host, port, username, password, privateKey, ScriptAction(() => action)), children.toList))
+  }
+
   private[syntax] val d1 = HFix[HostConn, String](
     HostConn(
       HostConnInfo(
         "192.168.99.100",
         2022,
-        "test",
+        Some("test"),
         Some("test"),
         None,
         ScriptAction(() => "88")
@@ -108,7 +113,7 @@ object STC {
             HostConnInfo(
               "192.168.99.100",
               2023,
-              "test",
+              Some("test"),
               Some("test"),
               None,
               ScriptAction(() => true)
@@ -119,7 +124,7 @@ object STC {
                   HostConnInfo(
                     "192.168.99.100",
                     2023,
-                    "test",
+                    Some("test"),
                     Some("test"),
                     None,
                     ScriptAction(() => 3)
@@ -134,11 +139,34 @@ object STC {
     )
   )
 
-
-  
+  private[syntax] val d2 =
+    ssh(
+      "192.168.99.100",
+      2022,
+      Some("test"),
+      Some("test"),
+      None,
+      "88",
+      ssh(
+        "192.168.99.100",
+        2023,
+        Some("test"),
+        Some("test"),
+        None,
+        true,
+        ssh(
+          "192.168.99.100",
+          2023,
+          Some("test"),
+          Some("test"),
+          None,
+          3
+        )
+      )
+    )
 
   def main(args: Array[String]): Unit = {
     println(d1)
-    
+    println(d2)
   }
 }

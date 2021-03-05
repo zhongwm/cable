@@ -121,11 +121,12 @@ object STC3 {
 
   def main(args: Array[String]): Unit = {
     val initCtx: Option[HostConnInfo[_]] = None
-    println(hostConn2HostConnC(d1, initCtx, Some(_)))
+    val withContext = hostConn2HostConnC(d1, initCtx, Some(_))
+    println(withContext)
 
     def getA[A](h: HostConn[Any, A]) = h.hc
 //    def getList[F, A](h: HostConn[F, A]): List[HFix[HostConn, *]] = h.nextLevel
 //    println(hostConn2HostConnCFg(d1, initCtx, {f => Some(getA(f.unfix))}, )
-    hCata(exec, d1)
+    hCata(exec, d2)
   }
 }
