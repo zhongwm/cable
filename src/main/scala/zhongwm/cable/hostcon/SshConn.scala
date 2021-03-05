@@ -273,11 +273,11 @@ object SshConn {
   def jumpSessionL(
         zl: ZLayer[Blocking, IOException, Has[ClientSession]],
         host: String, port: Int,
-        username: String,
+        username: Option[String] = None,
         password: Option[String] = None,
         privateKey: Option[KeyPair] = None) =
     ((((Blocking.live ++ zl) >>> jumpAddressLayer(host, port) ++ Blocking.live) >>>
-      jumpSshConnL(Some(username), password, privateKey)) ++ Blocking.live ++ clientLayer) >>>
+      jumpSshConnL(username, password, privateKey)) ++ Blocking.live ++ clientLayer) >>>
         sessionL
 
   def jumpSshConnL(username: Option[String], password: Option[String] = None, privateKey: Option[KeyPair] = None) =
