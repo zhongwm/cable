@@ -39,7 +39,7 @@ import zio._
 import zio.console.{Console => ZConsole}
 import zio.blocking.Blocking
 
-object STC2 {
+object STC {
 
   sealed trait ScaAnsible[A]
   case class ScriptAction[A](script: () => A) extends ScaAnsible[A]

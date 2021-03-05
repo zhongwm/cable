@@ -32,7 +32,7 @@
 
 package zhongwm.cable.hostcon.syntax
 
-import STC2._
+import STC._
 import cats.{Id, ~>}
 import zhongwm.cable.hostcon.SshConn
 import zio._
