@@ -43,7 +43,7 @@ import atto.ParseResult._
 import cats._
 import cats.implicits._
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.io.Source
 
 object Defs {
@@ -81,6 +81,7 @@ object Defs {
     }
 
     @tailrec
+    @nowarn("msg=match may not be exhaustive")
     def parseGroup(acc: String, seq: String): (String, String) = {
       anyChar.parseOnly(seq) match {
         case Fail(in, _, msg) =>
@@ -114,6 +115,7 @@ object Defs {
      * @param l
      * @return
      */
+    @nowarn("msg=match may not be exhaustive")
     def parseGroupVarDef(l: String): Option[(String, Option[String])] = {
       many(notChar('=')).parse(l) match {
         case Partial(k) =>
@@ -130,6 +132,7 @@ object Defs {
     }
 
     @tailrec
+    @nowarn("msg=match may not be exhaustive")
     def parseGroupVarDefs(ll: List[String], pd:List[(String, Option[String])]=Nil): (List[String], List[(String, Option[String])]) = {
       ll match {
         case Nil =>
@@ -145,6 +148,7 @@ object Defs {
 
     object HostLineP {
       @tailrec
+      @nowarn("msg=match may not be exhaustive")
       def parseVarDef[A](l: String, mm: Map[String, Option[String]]=Map.empty): Either[ParseFailure[A], (String, Map[String, Option[String]])] = {
         // println(l)
         val sl = many1(oneOf(" \t")).parseOnly(l) match {
@@ -176,6 +180,7 @@ object Defs {
           }
 
           @tailrec
+          @nowarn("msg=match may not be exhaustive")
           def parseAval(in: String, vv: List[Char]=Nil): (String, List[Char]) = anyChar parseOnly in match {
             case Fail(input, stack, message) =>
               (input, vv)  // end
@@ -212,6 +217,7 @@ object Defs {
         }
       }
 
+      @nowarn("msg=match may not be exhaustive")
       def parseHostLine[_](group: PRGroup, l: String): Either[ParseFailure[_], PRHostDef] =
         notChar('[') ~ many1(noneOf("[]= ")) parseOnly l match {
           case fail@Fail(input, stack, message) =>

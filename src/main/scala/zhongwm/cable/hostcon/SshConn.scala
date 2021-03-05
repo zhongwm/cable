@@ -395,6 +395,8 @@ object SshConn {
           e
         case t: Throwable =>
           new IOException(t)
+        case a: Any =>
+          new IOException(s"Cause: `${a.getClass.getCanonicalName}`: $a")
       }
       _ <- putStrLn("begin receiving from reactive streams") *> mapToIOE(effectBlocking {
         println("waiting for event.")

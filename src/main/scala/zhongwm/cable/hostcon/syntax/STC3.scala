@@ -112,7 +112,6 @@ object STC3 {
         case ScriptAction(script) =>
           val value = script()
           println(value)
-          ()
       }
     }
   }
