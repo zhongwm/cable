@@ -90,7 +90,7 @@ object STC2 {
 
   case class HFix[F[_[_], _], A](unfix: F[HFix[F, *], A])
   case class HCFix[F[_[_], _, _], C, A](unfix: F[HCFix[F, C, *], C, A])
-  case class HCDFix[F[_[_, _], _, _], C, A](unfix: F[Lambda[(C, D) => HCDFix[F, C, D]], C, A])
+  case class HCDFix[F[_[+_, +_], +_, +_], +C, +A](unfix: F[λ[(+[C], +[D]) => HCDFix[F, C, D]], C, A])
 
   private[syntax] val d1 = HFix[HostConn, String](
     HostConn(
