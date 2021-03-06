@@ -45,11 +45,11 @@ object STC {
                              password: Option[String],
                              privKey: Option[KeyPair],
                              action: ScaAnsible[A])
-  case class HostConn[F[+_], +T](hc: HostConnInfo[T], nextLevel: List[F[Any]])
+  case class HostConn[F[+_], +T](hc: HostConnInfo[T], nextLevel: List[F[_]])
 
-  case class HostConnC[F[+_], +C, +T](parent: C, hc: HostConnInfo[T], nextLevel: List[F[Any]])
+  case class HostConnC[F[+_], +C, +T](parent: C, hc: HostConnInfo[T], nextLevel: List[F[_]])
 
-  case class HostConnMat[F[+_], +T](parentSessionL: Option[SessionLayer], sl: SessionLayer, hm: HostConnInfoMat[T], nextLevel: List[F[Any]])
+  case class HostConnMat[F[+_], +T](parentSessionL: Option[SessionLayer], sl: SessionLayer, hm: HostConnInfoMat[T], nextLevel: List[F[_]])
 
   case class HFix[F[_[+_], +_], +A](unfix: F[HFix[F, +*], A])
   case class HCFix[F[_[+_], +_, +_], C, +A](unfix: F[HCFix[F, C, +*], C, A])

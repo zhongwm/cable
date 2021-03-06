@@ -86,7 +86,7 @@ object STC3 {
 //        hostConn2HostConnC(x, parent, f) :: hostConn2HostConnCInner(xs, parent)
 //    }}
 //    HCFix(HostConnC(initialCtx, unfix.hc, hostConn2HostConnCInner(unfix.nextLevel, f(unfix.hc))))
-    HCFix(HostConnC(initialCtx, unfix.hc, unfix.nextLevel.foldLeft(List.empty[HCFix[HostConnC, C, Any]]){(a, i) => hostConn2HostConnC(i, f(unfix.hc), f) :: a }))
+    HCFix(HostConnC(initialCtx, unfix.hc, unfix.nextLevel.foldLeft(List.empty[HCFix[HostConnC, C, _]]){(a, i) => hostConn2HostConnC(i, f(unfix.hc), f) :: a }))
   }
 
   def hostConn2HostConnCFg[F[_[+_], +_], G[_[+_], +_, +_], C, A](hc: HFix[F, A], parentCtx: C,
@@ -118,13 +118,13 @@ object STC3 {
     }
   }
 
-  def toLayered(a: HCFix[HostConnC, Option[HostConnInfo[_]], Any]): HCFix[HostConnC, Option[SessionLayer], Any] = {
+  def toLayered(a: HCFix[HostConnC, Option[HostConnInfo[_]], _]): HCFix[HostConnC, Option[SessionLayer], _] = {
     val unfix = a.unfix
     def derive[A, B](parent: Option[HostConnInfo[A]], current: HostConnInfo[B]): SessionLayer = parent match {
       case None => SshConn.sessionL(new SshConn(Left(current.ho, current.port), current.userName, current.password, current.privKey))
       case Some(p) => SshConn.jumpSessionL(derive(None, p), current.ho, current.port, current.userName, current.password, current.privKey)
     }
-    HCFix(HostConnC(Some(derive(unfix.parent, unfix.hc)), unfix.hc, unfix.nextLevel.foldLeft(List.empty[HCFix[HostConnC, Option[SessionLayer], Any]]){(acc, i) => toLayered(i) :: acc}))
+    HCFix(HostConnC(Some(derive(unfix.parent, unfix.hc)), unfix.hc, unfix.nextLevel.foldLeft(List.empty[HCFix[HostConnC, Option[SessionLayer], _]]){(acc, i) => toLayered(i) :: acc}))
   }
 
 

@@ -177,6 +177,10 @@ object SshConn {
     type SessionLayer = ZLayer[Blocking, IOException, Has[ClientSession]]
 
     type KeyPair = java.security.KeyPair
+
+    type SshIO[+A] = ZIO[ZEnv with Has[ClientSession], IOException, A]
+
+    val ev1 = implicitly[ZIO[Blocking with Has[ClientSession], IOException, Int] <:< SshIO[Int]]
   }
   
   implicit val clientLayer: ZLayer[Blocking, Nothing, Has[SshClient]] =
