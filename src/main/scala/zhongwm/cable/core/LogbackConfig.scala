@@ -40,7 +40,7 @@ object LogbackConfig {
 
   def configLogbackForLib(): Unit = {
     val context = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
-    val logbackManualConfigStream = getClass.getClassLoader.getResourceAsStream(".cable-logback-manual-config.xml")
+    val logbackManualConfigStream = getClass.getClassLoader.getResourceAsStream("cable-logback-manual-config.xml")
     try {
       val configurator = new JoranConfigurator
       configurator.setContext(context)

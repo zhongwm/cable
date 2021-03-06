@@ -36,23 +36,23 @@ import zhongwm.cable.hostcon.SshConn.types._
 
 object STC {
 
-  sealed trait ScaAnsible[A]
-  case class ScriptAction[A](script: () => A) extends ScaAnsible[A]
+  sealed trait ScaAnsible[+A]
+  case class ScriptAction[+A](script: () => A) extends ScaAnsible[A]
 
-  case class HostConnInfo[A](ho: String,
+  case class HostConnInfo[+A](ho: String,
                              port: Int,
                              userName: Option[String] = Some("root"),
                              password: Option[String],
                              privKey: Option[KeyPair],
                              action: ScaAnsible[A])
-  case class HostConn[F[_], T](hc: HostConnInfo[T], nextLevel: List[F[Any]])
+  case class HostConn[F[+_], +T](hc: HostConnInfo[T], nextLevel: List[F[Any]])
 
-  case class HostConnC[+F[_], C, T](parent: C, hc: HostConnInfo[T], nextLevel: List[F[Any]])
+  case class HostConnC[F[+_], +C, +T](parent: C, hc: HostConnInfo[T], nextLevel: List[F[Any]])
 
-  case class HostConnMat[F[_], T](parentSessionL: Option[SessionLayer], sl: SessionLayer, hm: HostConnInfoMat[T], nextLevel: List[F[Any]])
+  case class HostConnMat[F[+_], +T](parentSessionL: Option[SessionLayer], sl: SessionLayer, hm: HostConnInfoMat[T], nextLevel: List[F[Any]])
 
-  case class HFix[F[_[_], _], A](unfix: F[HFix[F, *], A])
-  case class HCFix[F[_[_], _, _], C, A](unfix: F[HCFix[F, C, *], C, A])
+  case class HFix[F[_[+_], +_], +A](unfix: F[HFix[F, +*], A])
+  case class HCFix[F[_[+_], +_, +_], C, +A](unfix: F[HCFix[F, C, +*], C, A])
   case class HCDFix[F[_[+_, +_], +_, +_], +C, +A](unfix: F[λ[(+[C], +[D]) => HCDFix[F, C, D]], C, A])
 
   def ssh[A](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], action: => A, children: HFix[HostConn, Any]*): HFix[HostConn, A] = {
@@ -78,7 +78,7 @@ object STC {
               Some("test"),
               Some("test"),
               None,
-              ScriptAction(() => true)
+              ScriptAction(() => "")
             ),
             List(
               HFix(
@@ -89,7 +89,7 @@ object STC {
                     Some("test"),
                     Some("test"),
                     None,
-                    ScriptAction(() => 3)
+                    ScriptAction(() => "")
                   ),
                   Nil
                 )

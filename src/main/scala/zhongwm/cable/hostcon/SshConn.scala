@@ -172,7 +172,7 @@ object SshConn {
      *
      * @tparam A
      */
-    type HostConnInfoMat[A] = ZIO[Blocking with ZConsole with Has[ClientSession], IOException, A]
+    type HostConnInfoMat[+A] = ZIO[Blocking with ZConsole with Has[ClientSession], IOException, A]
 
     type SessionLayer = ZLayer[Blocking, IOException, Has[ClientSession]]
 

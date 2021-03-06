@@ -35,16 +35,17 @@ package zhongwm.cable.hostcon.syntax
 import STC._
 import cats.{Id, ~>}
 import zhongwm.cable.hostcon.SshConn
+import zhongwm.cable.hostcon.SshConn.types._
 import zio._
 
 object STC3 {
 
-  trait HFunctor[F[_[_], _]] {
-    def hmap[I[_], J[_]](nt: I ~> J): F[I, *] ~> F[J, *]
+  trait HFunctor[F[_[+_], +_]] {
+    def hmap[I[+_], J[+_]](nt: I ~> J): F[I, +*] ~> F[J, +*]
   }
 
   implicit val hostConnHFunctor: HFunctor[HostConn] = new HFunctor[HostConn] {
-    override def hmap[I[_], J[_]](nt: I ~> J): HostConn[I, *] ~> HostConn[J, *] = new (HostConn[I, *] ~> HostConn[J, *]) {
+    override def hmap[I[+_], J[+_]](nt: I ~> J): HostConn[I, *] ~> HostConn[J, *] = new (HostConn[I, *] ~> HostConn[J, *]) {
       override def apply[A](fa: HostConn[I, A]): HostConn[J, A] = {
         def pl[P[_], Q[_], X](xs: List[P[X]], ntt: P ~> Q): List[Q[X]] = {
           xs match {
@@ -59,39 +60,40 @@ object STC3 {
     }
   }
 
-  type HAlgebra[F[_[_], _], G[_]] = F[G, *] ~> G
+  type HAlgebra[F[_[+_], +_], G[+_]] = F[G, +*] ~> G
 
-  def hCata[F[_[_], _], G[_], I](alg: HAlgebra[F, G], hFix: HFix[F, I])(implicit F: HFunctor[F]): G[I] = {
+  def hCata[F[_[+_], +_], G[+_], I](alg: HAlgebra[F, G], hFix: HFix[F, I])(implicit F: HFunctor[F]): G[I] = {
     val inner = hFix.unfix
     val nt = F.hmap(
-      new (HFix[F, *] ~> G) {
+      new (HFix[F, +*] ~> G) {
         override def apply[A](fa: HFix[F, A]): G[A] = hCata(alg, fa)
       }
     )(inner)
     alg(nt)
   }
 
-  type Eval[A] =  Unit
+  type Eval[+A] =  Unit
 
   // type HCE[A] = HFix[HostConnC, A]
 
   def hostConn2HostConnC[C, A](hc: HFix[HostConn, A], initialCtx: C, f: HostConnInfo[_] => C): HCFix[HostConnC, C, A] = {
     val unfix = hc.unfix
 
-    def hostConn2HostConnCInner[X](hc: List[HFix[HostConn, X]], parent: C): List[HCFix[HostConnC, C, X]] = { hc match {
-      case Nil =>
-        Nil
-      case x :: xs =>
-        hostConn2HostConnC(x, parent, f) :: hostConn2HostConnCInner(xs, parent)
-    }}
-    HCFix(HostConnC(initialCtx, unfix.hc, hostConn2HostConnCInner(unfix.nextLevel, f(unfix.hc))))
+//    def hostConn2HostConnCInner[X](hc: List[HFix[HostConn, X]], parent: C): List[HCFix[HostConnC, C, X]] = { hc match {
+//      case Nil =>
+//        Nil
+//      case x :: xs =>
+//        hostConn2HostConnC(x, parent, f) :: hostConn2HostConnCInner(xs, parent)
+//    }}
+//    HCFix(HostConnC(initialCtx, unfix.hc, hostConn2HostConnCInner(unfix.nextLevel, f(unfix.hc))))
+    HCFix(HostConnC(initialCtx, unfix.hc, unfix.nextLevel.foldLeft(List.empty[HCFix[HostConnC, C, Any]]){(a, i) => hostConn2HostConnC(i, f(unfix.hc), f) :: a }))
   }
 
-  def hostConn2HostConnCFg[F[_[_], _], G[_[_], _, _], C, A](hc: HFix[F, A], parentCtx: C,
+  def hostConn2HostConnCFg[F[_[+_], +_], G[_[+_], +_, +_], C, A](hc: HFix[F, A], parentCtx: C,
                                                             deriveChildContext: HFix[F, A] => C,
                                                             getList: HFix[F, A] => List[HFix[F, A]],
                                                             getA: HFix[F, A] => A,
-                                                            ctor: (C, A, List[HCFix[G, C, A]]) => G[HCFix[G, C, *], C, A]
+                                                            ctor: (C, A, List[HCFix[G, C, A]]) => G[HCFix[G, C, +*], C, A]
                                                            ): HCFix[G, C, A] = {
     val unfix = hc.unfix
 
@@ -116,13 +118,25 @@ object STC3 {
     }
   }
 
+  def toLayered(a: HCFix[HostConnC, Option[HostConnInfo[_]], Any]): HCFix[HostConnC, Option[SessionLayer], Any] = {
+    val unfix = a.unfix
+    def derive[A, B](parent: Option[HostConnInfo[A]], current: HostConnInfo[B]): SessionLayer = parent match {
+      case None => SshConn.sessionL(new SshConn(Left(current.ho, current.port), current.userName, current.password, current.privKey))
+      case Some(p) => SshConn.jumpSessionL(derive(None, p), current.ho, current.port, current.userName, current.password, current.privKey)
+    }
+    HCFix(HostConnC(Some(derive(unfix.parent, unfix.hc)), unfix.hc, unfix.nextLevel.foldLeft(List.empty[HCFix[HostConnC, Option[SessionLayer], Any]]){(acc, i) => toLayered(i) :: acc}))
+  }
+
 
 //  val exec1: HAlgebra[HostConn, ]
 
   def main(args: Array[String]): Unit = {
     val initCtx: Option[HostConnInfo[_]] = None
-    val withContext = hostConn2HostConnC(d1, initCtx, Some(_))
-    println(withContext)
+    val value: HCFix[HostConnC, Option[HostConnInfo[_]], String] = hostConn2HostConnC(d2, initCtx, Some(_))
+    println(value)
+    println("-----")
+    println(toLayered(value))
+    println("=====")
 
     def getA[A](h: HostConn[Any, A]) = h.hc
 //    def getList[F, A](h: HostConn[F, A]): List[HFix[HostConn, *]] = h.nextLevel
