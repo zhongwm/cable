@@ -31,16 +31,57 @@
 /* Written by Wenming Zhong */
 
 package zhongwm.cable.core
+import java.io.ByteArrayInputStream
+
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.joran.JoranConfigurator
 import ch.qos.logback.core.joran.spi.JoranException
 import org.slf4j.LoggerFactory
 
 object LogbackConfig {
+  private val logbackConfigXml =
+    """<?xml version="1.0" encoding="UTF-8"?>
+      |<configuration>
+      |
+      |    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+      |        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      |            <level>INFO</level>
+      |        </filter>
+      |        <encoder>
+      |            <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg {%mdc}%n</pattern>
+      |        </encoder>
+      |    </appender>
+      |
+      |    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+      |        <file>target/myapp-dev.log</file>
+      |        <encoder>
+      |            <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg {%mdc}%n</pattern>
+      |        </encoder>
+      |    </appender>
+      |
+      |
+      |    <root level="DEBUG">
+      |        <appender-ref ref="STDOUT"/>
+      |        <appender-ref ref="FILE"/>
+      |    </root>
+      |    <logger name="org.apache.sshd" level="WARN">
+      |        <appender-ref ref="STDOUT" />
+      |        <appender-ref ref="FILE"/>
+      |    </logger>
+      |    <logger name="io.netty.bootstrap.Bootstrap" level="ERROR">
+      |        <appender-ref ref="STDOUT"/>
+      |        <appender-ref ref="FILE"/>
+      |    </logger>
+      |    <logger name="io.netty" level="WARN">
+      |        <appender-ref ref="STDOUT"/>
+      |        <appender-ref ref="FILE"/>
+      |    </logger>
+      |</configuration>
+      |""".stripMargin
 
   def configLogbackForLib(): Unit = {
     val context = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
-    val logbackManualConfigStream = getClass.getClassLoader.getResourceAsStream("cable-logback-manual-config.xml")
+    val logbackManualConfigStream = new ByteArrayInputStream(logbackConfigXml.getBytes)
     try {
       val configurator = new JoranConfigurator
       configurator.setContext(context)

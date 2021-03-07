@@ -32,12 +32,14 @@
 
 package zhongwm.cable.hostcon.syntax
 
+import zhongwm.cable.hostcon.SshConn
 import zhongwm.cable.hostcon.SshConn.types._
 
 object STC {
 
   sealed trait ScaAnsible[+A]
-  case class ScriptAction[+A](script: () => A) extends ScaAnsible[A]
+  // case class ScriptAction[+A](action: () => A) extends ScaAnsible[A]
+  case class ScriptAction[+A](action: SshIO[A]) extends ScaAnsible[A]
 
   case class HostConnInfo[+A](ho: String,
                              port: Int,
@@ -55,11 +57,15 @@ object STC {
   case class HCFix[F[_[+_], +_, +_], C, +A](unfix: F[HCFix[F, C, +*], C, A])
   case class HCDFix[F[_[+_, +_], +_, +_], +C, +A](unfix: F[λ[(+[C], +[D]) => HCDFix[F, C, D]], C, A])
 
-  def ssh[A](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], action: => A, children: HFix[HostConn, Any]*): HFix[HostConn, A] = {
-    HFix(HostConn(HostConnInfo(host, port, username, password, privateKey, ScriptAction(() => action)), children.toList))
+  def ssh[A](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], action: SshIO[A], children: HFix[HostConn, Any]*): HFix[HostConn, A] = {
+    HFix(HostConn(HostConnInfo(host, port, username, password, privateKey, ScriptAction(action)), children.toList))
   }
 
-  private[syntax] val d1 = HFix[HostConn, String](
+  // def ssh[A](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], action: => A, children: HFix[HostConn, Any]*): HFix[HostConn, A] = {
+  //   HFix(HostConn(HostConnInfo(host, port, username, password, privateKey, ScriptAction(() => action)), children.toList))
+  // }
+
+  private[syntax] val d1 = HFix[HostConn, Any](
     HostConn(
       HostConnInfo(
         "192.168.99.100",
@@ -67,7 +73,8 @@ object STC {
         Some("test"),
         Some("test"),
         None,
-        ScriptAction(() => "88")
+        // ScriptAction(() => "88")
+        ScriptAction(SshConn.scriptIO("hostname") *> SshConn.scriptIO("ls /"))
       ),
       List(
         HFix(
@@ -78,7 +85,8 @@ object STC {
               Some("test"),
               Some("test"),
               None,
-              ScriptAction(() => "")
+              // ScriptAction(() => "")
+              ScriptAction(SshConn.scpUploadIO("build.sbt"))
             ),
             List(
               HFix(
@@ -89,7 +97,8 @@ object STC {
                     Some("test"),
                     Some("test"),
                     None,
-                    ScriptAction(() => "")
+                    // ScriptAction(() => "")
+                    ScriptAction(SshConn.scpDownloadIO("/etc/lsb-release"))
                   ),
                   Nil
                 )
@@ -101,29 +110,29 @@ object STC {
     )
   )
 
-  private[syntax] val d2 =
+  private[syntax] val d2: HFix[HostConn, Any] =
     ssh(
       "192.168.99.100",
       2022,
       Some("test"),
       Some("test"),
       None,
-      "88",
+      SshConn.scriptIO("hostname") *> SshConn.scriptIO("ls /"),
       ssh(
         "192.168.99.100",
         2023,
         Some("test"),
         Some("test"),
         None,
-        true,
-        ssh(
+        SshConn.scpUploadIO("build.sbt")
+        /*ssh(
           "192.168.99.100",
           2023,
           Some("test"),
           Some("test"),
           None,
           3
-        )
+        )*/
       )
     )
 
