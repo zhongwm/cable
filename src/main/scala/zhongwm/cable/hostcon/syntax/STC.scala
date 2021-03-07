@@ -49,7 +49,11 @@ object STC {
                              action: ScaAnsible[A])
   case class HostConn[F[+_], +T](hc: HostConnInfo[T], nextLevel: List[F[_]])
 
-  case class HostConnC[F[+_], +C, +T](parent: C, hc: HostConnInfo[T], nextLevel: List[F[_]])
+  /**
+   * A context can be an adaptive concept, it could either be a parent node
+   * inside some meta(higher level) information or a context when running.
+   */
+  case class HostConnC[F[+_], +C, +T](context: C, hc: HostConnInfo[T], nextLevel: List[F[_]])
 
   case class HostConnMat[F[+_], +T](parentSessionL: Option[SessionLayer], sl: SessionLayer, hm: HostConnInfoMat[T], nextLevel: List[F[_]])
 

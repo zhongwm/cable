@@ -80,7 +80,7 @@ object STC3 {
     override def hmap[I[+_], J[+_]](nt: I ~> J): HostConnC[I, C, +*] ~> HostConnC[J, C, +*] =
       new (HostConnC[I, C, +*] ~> HostConnC[J, C, +*]) {
         override def apply[A](fa: HostConnC[I, C, A]): HostConnC[J, C, A] = {
-          HostConnC(fa.parent, fa.hc, fa.nextLevel.foldLeft(List.empty[J[_]]){(acc, i) => nt(i) :: acc})
+          HostConnC(fa.context, fa.hc, fa.nextLevel.foldLeft(List.empty[J[_]]){ (acc, i) => nt(i) :: acc})
         }
       }
   }
@@ -126,7 +126,7 @@ object STC3 {
     override def apply[A](fa: HostConnC[Exec, Option[SessionLayer], A]): Exec[A] = {
       fa.hc.action match {
         case ScriptAction(script) =>
-          fa.parent.map{pp => Runtime.default.unsafeRun(script.provideCustomLayer(pp))}.fold(Left("no value"): Either[String, A])(v => Right[String, A](v): Either[String, A])
+          fa.context.map{ pp => Runtime.default.unsafeRun(script.provideCustomLayer(pp))}.fold(Left("no value"): Either[String, A])(v => Right[String, A](v): Either[String, A])
       }
     }
   }
@@ -146,7 +146,7 @@ object STC3 {
       case None => SshConn.sessionL(new SshConn(Left(current.ho, current.port), current.userName, current.password, current.privKey))
       case Some(p) => SshConn.jumpSessionL(derive(None, p), current.ho, current.port, current.userName, current.password, current.privKey)
     }
-    HCFix(HostConnC(Some(derive(unfix.parent, unfix.hc)), unfix.hc, unfix.nextLevel.foldLeft(List.empty[HCFix[HostConnC, Option[SessionLayer], _]]){(acc, i) => toLayered(i) :: acc}))
+    HCFix(HostConnC(Some(derive(unfix.context, unfix.hc)), unfix.hc, unfix.nextLevel.foldLeft(List.empty[HCFix[HostConnC, Option[SessionLayer], _]]){ (acc, i) => toLayered(i) :: acc}))
   }
 
   def main(args: Array[String]): Unit = {
