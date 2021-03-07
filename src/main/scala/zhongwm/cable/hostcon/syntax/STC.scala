@@ -102,7 +102,7 @@ object STC {
                     Some("test"),
                     None,
                     // ScriptAction(() => "")
-                    ScriptAction(SshConn.scpDownloadIO("/etc/lsb-release"))
+                    ScriptAction(SshConn.scpDownloadIO("/etc/issue"))
                   ),
                   Nil
                 )
@@ -128,7 +128,7 @@ object STC {
         Some("test"),
         Some("test"),
         None,
-        SshConn.scpUploadIO("build.sbt")
+        SshConn.scpUploadIO("build.sbt") *> SshConn.scpDownloadIO("/etc/issue")
         /*ssh(
           "192.168.99.100",
           2023,
