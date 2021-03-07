@@ -140,13 +140,20 @@ object STC3 {
     }
   }
 
-  def toLayered(a: HCFix[HostConnC, Option[HostConnInfo[_]], _]): HCFix[HostConnC, Option[SessionLayer], _] = {
+  def toLayered[A](a: HCFix[HostConnC, Option[HostConnInfo[_]], A]): HCFix[HostConnC, Option[SessionLayer], A] = {
     val unfix = a.unfix
     def derive[A, B](parent: Option[HostConnInfo[A]], current: HostConnInfo[B]): SessionLayer = parent match {
       case None => SshConn.sessionL(new SshConn(Left(current.ho, current.port), current.userName, current.password, current.privKey))
       case Some(p) => SshConn.jumpSessionL(derive(None, p), current.ho, current.port, current.userName, current.password, current.privKey)
     }
     HCFix(HostConnC(Some(derive(unfix.context, unfix.hc)), unfix.hc, unfix.nextLevel.foldLeft(List.empty[HCFix[HostConnC, Option[SessionLayer], _]]){ (acc, i) => toLayered(i) :: acc}))
+  }
+
+  def executeSshIO[A](sshIO: HFix[HostConn, A]): Exec[A] = {
+    val initCtx: Option[HostConnInfo[_]] = None
+    val value: HCFix[HostConnC, Option[HostConnInfo[_]], A] = hostConn2HostConnC(sshIO, initCtx, Some(_))
+    implicit val layered = toLayered(value)
+    hcCata(execWithContext, layered)
   }
 
   def main(args: Array[String]): Unit = {
