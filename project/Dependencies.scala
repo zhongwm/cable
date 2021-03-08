@@ -11,7 +11,6 @@ object Dependencies {
   val http4sVersion = "0.21.7"
   val zioVersion = "1.0.4-2"
   val circeVersion = "0.13.0"
-  val ini4jVersion = "0.5.4"
 
   lazy val commonDependencies = Seq(
     scalaTest % Test,
@@ -31,7 +30,6 @@ object Dependencies {
     "com.typesafe.akka" %% "akka-discovery" % akkaVersion,
     "com.lightbend.akka.discovery" %% "akka-discovery-consul" % "1.0.8",
 
-    "org.ini4j" % "ini4j" % "0.5.4",
     "com.lihaoyi" %% "pprint" % "0.5.6" % "test",
 
   //    "com.pszymczyk.consul" % "embedded-consul" % "2.1.4",

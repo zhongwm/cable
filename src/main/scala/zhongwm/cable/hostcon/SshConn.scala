@@ -60,12 +60,12 @@ import zio.duration._
 import scala.io.Source
 
 case class SshConn(
-               val /*host: Option[String],
+               /*host: Option[String],
               val port: Option[Int] = Some(22),*/
                connInfo: Either[(String, Int), SshdSocketAddress],
-               val username: Option[String] = Some("root"),
-               val password: Option[String] = None,
-               val privateKey: Option[KeyPair] = None
+               username: Option[String] = Some("root"),
+               password: Option[String] = None,
+               privateKey: Option[KeyPair] = None
              ) {
 
   def mapToIOE[R, A](z: ZIO[R, Throwable, A]): ZIO[R, IOException, A] =

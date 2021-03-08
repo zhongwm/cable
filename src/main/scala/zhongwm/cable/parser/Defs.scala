@@ -34,7 +34,6 @@ package zhongwm.cable.parser
 
 import java.io.File
 
-import org.ini4j.{Ini, Wini}
 import zio._
 import console._
 import atto._

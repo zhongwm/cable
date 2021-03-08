@@ -34,39 +34,26 @@ package zhongwm.cable.hostcon
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import zhongwm.cable.hostcon.SshConn.types._
-import zhongwm.cable.hostcon.syntax.STC._
-import zhongwm.cable.hostcon.syntax.STC3._
+import zhongwm.cable.hostcon.syntax.STC3
 
-class SyntaxSpec extends AnyWordSpec with Matchers {
+
+class SshActionDefSpec extends AnyWordSpec with Matchers {
 
   import SshActionDef._
-  
+
+  "Scripts" when {
+    "assembled by hand or created by dsl"  should {
+      "be equal" in {
+        script shouldEqual scriptManualDef
+      }
+    }
+  }
+
   "Script" when {
     "executed" should {
       "be ok" in {
-        val value = executeSshIO(script)
-        value.isRight should be(true)
-      }
-    }
-
-    "Some random test code" should {
-      "be ok" in {
-        val initCtx: Option[HostConnInfo[_]] = None
-        val value = hostConn2HostConnC(script, initCtx, Some(_))
-        println(value)
-        println("-----")
-        implicit val layered: HCFix[HostConnC, Option[SessionLayer], _] = toLayered(value)
-        // val hcf = implicitly[HCFunctor[HostConnC, Option[SessionLayer]]](layered)
-        println(layered)
-        println("=====")
-        val materialized = hcFold(execWithContext, layered)
-        println(materialized)
-
-        def getA[A](h: HostConn[Any, A]) = h.hc
-        //    def getList[F, A](h: HostConn[F, A]): List[HFix[HostConn, *]] = h.nextLevel
-        //    println(hostConn2HostConnCFg(d1, initCtx, {f => Some(getA(f.unfix))}, )
-        hFold(inspection, script)
+        val value = STC3.executeSshIO(scriptManualDef)
+        value.isRight shouldBe true
       }
     }
   }

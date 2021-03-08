@@ -156,21 +156,4 @@ object STC3 {
     hcFold(execWithContext, layered)
   }
 
-  def main(args: Array[String]): Unit = {
-    val initCtx: Option[HostConnInfo[_]] = None
-    val value = hostConn2HostConnC(d2, initCtx, Some(_))
-    println(value)
-    println("-----")
-    implicit val layered: HCFix[HostConnC, Option[SessionLayer], _] = toLayered(value)
-    // val hcf = implicitly[HCFunctor[HostConnC, Option[SessionLayer]]](layered)
-    println(layered)
-    println("=====")
-    val materialized = hcFold(execWithContext, layered)
-    println(materialized)
-
-    def getA[A](h: HostConn[Any, A]) = h.hc
-//    def getList[F, A](h: HostConn[F, A]): List[HFix[HostConn, *]] = h.nextLevel
-//    println(hostConn2HostConnCFg(d1, initCtx, {f => Some(getA(f.unfix))}, )
-    hFold(inspection, d2)
-  }
 }
