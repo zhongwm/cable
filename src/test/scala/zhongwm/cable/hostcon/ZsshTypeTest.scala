@@ -36,11 +36,11 @@ import java.io.IOException
 
 import org.apache.sshd.client.session.ClientSession
 import org.scalatest.flatspec.AnyFlatSpecLike
-import zhongwm.cable.hostcon.SshConn.types._
+import zhongwm.cable.hostcon.Zssh.types._
 import zio.{Has, ZIO}
 import zio.blocking.Blocking
 
-object SshConnTypeTest extends AnyFlatSpecLike {
+object ZsshTypeTest extends AnyFlatSpecLike {
 
   "SshConn Type Test Suite" should "ss" in{
     // This should compile.

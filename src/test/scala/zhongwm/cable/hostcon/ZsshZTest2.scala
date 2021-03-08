@@ -36,44 +36,44 @@ import zio._
 import zio.blocking._
 import zio.console._
 
-object SshConnZTest2 {
+object ZsshZTest2 {
   val action = {
-    import SshConn._
+    import Zssh._
     scriptIO("hostname") <&>
       scpUploadIO("build.sbt") <&
       scpDownloadIO("/etc/issue")
   }
 
-  val jumperLayer = SshConn.sessionL(
+  val jumperLayer = Zssh.sessionL(
         Left("192.168.99.100", 2022), username = Some("test"), password = Some("test")
       )
 
   val jumpedLayer =
-    SshConn.jumpSessionL(jumperLayer, "192.168.99.100", 2023, Some("test"), Some("test"))
+    Zssh.jumpSessionL(jumperLayer, "192.168.99.100", 2023, Some("test"), Some("test"))
 
 
   
   val layer2 =
-    ((jumperLayer ++ Blocking.live) >>> SshConn.jumpAddressLayer("192.168.99.100", 2023)) ++ Blocking.live
+    ((jumperLayer ++ Blocking.live) >>> Zssh.jumpAddressLayer("192.168.99.100", 2023)) ++ Blocking.live
 
-  val layer3 = layer2 >>> SshConn.jumpSshConnL(Some("test"), Some("test"))
+  val layer3 = layer2 >>> Zssh.jumpSshConnL(Some("test"), Some("test"))
 
-  val layer4 = (SshConn.clientLayer ++ layer3 ++ Blocking.live) >>> SshConn.sessionL
+  val layer4 = (Zssh.clientLayer ++ layer3 ++ Blocking.live) >>> Zssh.sessionL
 
 
   private val process = for {
-    connJump <- SshConn.make(
+    connJump <- Zssh.make(
                   Left("192.168.99.100", 2022),
                   username = Some("test"),
                   password = Some("test")
                 )
     rst <- connJump.sessionM { outerSession =>
-             SshConn.jumpTo("192.168.99.100", 2023)(outerSession) >>= { fwd =>
-               val conn = new SshConn(Right(fwd.getBoundAddress), Some("test"), password = Some("test"))
+             Zssh.jumpTo("192.168.99.100", 2023)(outerSession) >>= { fwd =>
+               val conn = new Zssh(Right(fwd.getBoundAddress), Some("test"), password = Some("test"))
                conn.sessionM { innerSession =>
-                 SshConn.script("hostname")(innerSession) <&>
-                   SshConn.scpUpload("build.sbt")(innerSession) <&
-                   SshConn.scpDownload("/etc/issue")(innerSession)
+                 Zssh.script("hostname")(innerSession) <&>
+                   Zssh.scpUpload("build.sbt")(innerSession) <&
+                   Zssh.scpDownload("/etc/issue")(innerSession)
                }
              }
            }

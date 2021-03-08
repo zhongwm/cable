@@ -34,8 +34,8 @@ package zhongwm.cable.hostcon.syntax
 
 import STC._
 import cats.{Id, ~>}
-import zhongwm.cable.hostcon.SshConn
-import zhongwm.cable.hostcon.SshConn.types._
+import zhongwm.cable.hostcon.Zssh
+import zhongwm.cable.hostcon.Zssh.types._
 import zio._
 
 object STC3 {
@@ -143,8 +143,8 @@ object STC3 {
   def toLayered[A](a: HCFix[HostConnC, Option[HostConnInfo[_]], A]): HCFix[HostConnC, Option[SessionLayer], A] = {
     val unfix = a.unfix
     def derive[T, U](parent: Option[HostConnInfo[T]], current: HostConnInfo[U]): SessionLayer = parent match {
-      case None => SshConn.sessionL(Left(current.ho, current.port), current.userName, current.password, current.privKey)
-      case Some(p) => SshConn.jumpSessionL(derive(None, p), current.ho, current.port, current.userName, current.password, current.privKey)
+      case None => Zssh.sessionL(Left(current.ho, current.port), current.userName, current.password, current.privKey)
+      case Some(p) => Zssh.jumpSessionL(derive(None, p), current.ho, current.port, current.userName, current.password, current.privKey)
     }
     HCFix(HostConnC(Some(derive(unfix.context, unfix.hc)), unfix.hc, unfix.nextLevel.foldLeft(List.empty[HCFix[HostConnC, Option[SessionLayer], _]]){ (acc, i) => toLayered(i) :: acc}))
   }

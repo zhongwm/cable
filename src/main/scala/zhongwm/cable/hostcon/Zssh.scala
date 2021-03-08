@@ -59,7 +59,7 @@ import zio.duration._
 
 import scala.io.Source
 
-case class SshConn(
+case class Zssh(
                /*host: Option[String],
               val port: Option[Int] = Some(22),*/
                connInfo: Either[(String, Int), SshdSocketAddress],
@@ -139,7 +139,7 @@ case class SshConn(
 
 }
 
-object SshConn {
+object Zssh {
 
   LogbackConfig.configLogbackForLib()
 
@@ -182,7 +182,7 @@ object SshConn {
 
     val ev1 = implicitly[ZIO[Blocking with Has[ClientSession], IOException, Int] <:< SshIO[Int]]
   }
-  
+
   implicit val clientLayer: ZLayer[Blocking, Nothing, Has[SshClient]] =
     ZLayer fromManaged Managed.make {
       UIO.succeed {
@@ -212,12 +212,12 @@ object SshConn {
             username: Option[String] = Some("root"),
             password: Option[String] = None,
             privateKey: Option[KeyPair] = None
-          ): UIO[SshConn] =
-    IO.succeed(SshConn(addr, username, password, privateKey))
+          ): UIO[Zssh] =
+    IO.succeed(Zssh(addr, username, password, privateKey))
 
   def sessionL(connInfo: Either[(String, Int), SshdSocketAddress], username: Option[String] = Some("root"), password: Option[String] = None, privateKey: Option[KeyPair] = None) =
     (clientLayer ++ Blocking.live) >>> ZLayer.fromAcquireRelease(ZIO.environment[Has[SshClient]] >>= { cli =>
-      val sshConn = SshConn(connInfo, username, password, privateKey)
+      val sshConn = Zssh(connInfo, username, password, privateKey)
       effectBlocking {
         val _client = cli.get
         val connFuture = sshConn.connInfo match {
@@ -246,10 +246,10 @@ object SshConn {
       }
     }
 
-  val sessionL = ZLayer.fromManaged(ZManaged.make(ZIO.environment[Has[SshClient] with Has[SshConn]] >>= { r =>
+  val sessionL = ZLayer.fromManaged(ZManaged.make(ZIO.environment[Has[SshClient] with Has[Zssh]] >>= { r =>
     mapToIOE(effectBlocking {
       val _client = r.get[SshClient]
-      val sshConn = r.get[SshConn]
+      val sshConn = r.get[Zssh]
       val connFuture = sshConn.connInfo match {
         case Left(pair) =>
           _client.connect(sshConn.username.getOrElse("root"), pair._1, pair._2)
@@ -313,7 +313,7 @@ object SshConn {
 
   def jumpSshConnL(username: Option[String], password: Option[String] = None, privateKey: Option[KeyPair] = None) =
     ZLayer.fromService { a: SshdSocketAddress =>
-      SshConn(Right(a), username, password, privateKey)
+      Zssh(Right(a), username, password, privateKey)
     }
 
   def withJumpM[A](targetIp: String, targetPort: Int, jumpWork: ZIO[Has[SshdSocketAddress], IOException, A]) =
@@ -529,7 +529,7 @@ object SshConn {
   def main(args: Array[String]): Unit = {
 
     val runtime2 = Runtime.unsafeFromLayer(ZEnv.live >+> clientLayer)
-    val conn     = SshConn(Left("192.168.99.100", 2022), password = Some("test"), username = Some("test"))
+    val conn     = Zssh(Left("192.168.99.100", 2022), password = Some("test"), username = Some("test"))
     val result: (Int, (Chunk[String], Chunk[String])) = runtime2.unsafeRun(
       conn
         .sessionM(script( /*"ls /;exit\n"*/ "ls -l /"))

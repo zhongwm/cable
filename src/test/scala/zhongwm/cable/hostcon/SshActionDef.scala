@@ -36,51 +36,6 @@ import zhongwm.cable.hostcon.syntax.STC._
 
 object SshActionDef {
 
-  val scriptManualDef = HFix[HostConn, Any](
-    HostConn(
-      HostConnInfo(
-        "192.168.99.100",
-        2022,
-        Some("test"),
-        Some("test"),
-        None,
-        // ScriptAction(() => "88")
-        ScriptAction(SshConn.scriptIO("hostname") *> SshConn.scriptIO("ls /"))
-      ),
-      List(
-        HFix(
-          HostConn(
-            HostConnInfo(
-              "192.168.99.100",
-              2023,
-              Some("test"),
-              Some("test"),
-              None,
-              // ScriptAction(() => "")
-              ScriptAction(SshConn.scpUploadIO("build.sbt"))
-            ),
-            List(
-              HFix(
-                HostConn(
-                  HostConnInfo(
-                    "192.168.99.100",
-                    2023,
-                    Some("test"),
-                    Some("test"),
-                    None,
-                    // ScriptAction(() => "")
-                    ScriptAction(SshConn.scpDownloadIO("/etc/issue"))
-                  ),
-                  Nil
-                )
-              )
-            )
-          )
-        )
-      )
-    )
-  )
-  
   val script =
     ssh(
       "192.168.99.100",
@@ -88,14 +43,14 @@ object SshActionDef {
       Some("test"),
       Some("test"),
       None,
-      SshConn.scriptIO("hostname") *> SshConn.scriptIO("ls /"),
+      Zssh.scriptIO("hostname") *> Zssh.scriptIO("ls /"),
       ssh(
         "192.168.99.100",
         2023,
         Some("test"),
         Some("test"),
         None,
-        SshConn.scpUploadIO("build.sbt") *> SshConn.scpDownloadIO("/etc/issue")
+        Zssh.scpUploadIO("build.sbt") *> Zssh.scpDownloadIO("/etc/issue")
         /*ssh(
           "192.168.99.100",
           2023,
@@ -107,4 +62,94 @@ object SshActionDef {
       )
     )
 
+  val scriptManualDef = HFix[HostConn, Any](
+    HostConn(
+      HostConnInfo(
+        "192.168.99.100",
+        2022,
+        Some("test"),
+        Some("test"),
+        None,
+        // ScriptAction(() => "88")
+        ScriptAction(Zssh.scriptIO("hostname") *> Zssh.scriptIO("ls /"))
+      ),
+      List(
+        HFix(
+          HostConn(
+            HostConnInfo(
+              "192.168.99.100",
+              2023,
+              Some("test"),
+              Some("test"),
+              None,
+              // ScriptAction(() => "")
+              ScriptAction(Zssh.scpUploadIO("build.sbt") *> Zssh.scpDownloadIO("/etc/issue"))
+            ),
+            Nil
+            /*List(
+              HFix(
+                HostConn(
+                  HostConnInfo(
+                    "192.168.99.100",
+                    2023,
+                    Some("test"),
+                    Some("test"),
+                    None,
+                    // ScriptAction(() => "")
+                    ScriptAction(Zssh.scpDownloadIO("/etc/issue"))
+                  ),
+                  Nil
+                )
+              )
+            )*/
+          )
+        )
+      )
+    )
+  )
+
+  val scriptManualDef3Tier = HFix[HostConn, Any](
+    HostConn(
+      HostConnInfo(
+        "192.168.99.100",
+        2022,
+        Some("test"),
+        Some("test"),
+        None,
+        // ScriptAction(() => "88")
+        ScriptAction(Zssh.scriptIO("hostname") *> Zssh.scriptIO("ls /"))
+      ),
+      List(
+        HFix(
+          HostConn(
+            HostConnInfo(
+              "192.168.99.100",
+              2023,
+              Some("test"),
+              Some("test"),
+              None,
+              // ScriptAction(() => "")
+              ScriptAction(Zssh.scpUploadIO("build.sbt") *> Zssh.scpDownloadIO("/etc/issue"))
+            ),
+            List(
+              HFix(
+                HostConn(
+                  HostConnInfo(
+                    "192.168.99.100",
+                    2023,
+                    Some("test"),
+                    Some("test"),
+                    None,
+                    // ScriptAction(() => "")
+                    ScriptAction(Zssh.scpDownloadIO("/etc/issue"))
+                  ),
+                  Nil
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  )
 }

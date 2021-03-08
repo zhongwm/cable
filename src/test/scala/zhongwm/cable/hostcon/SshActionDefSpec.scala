@@ -41,14 +41,6 @@ class SshActionDefSpec extends AnyWordSpec with Matchers {
 
   import SshActionDef._
 
-  "Scripts" when {
-    "assembled by hand or created by dsl"  should {
-      "be equal" in {
-        script shouldEqual scriptManualDef
-      }
-    }
-  }
-
   "Script" when {
     "executed" should {
       "be ok" in {

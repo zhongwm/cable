@@ -37,18 +37,18 @@ import zio.test._
 import zio.blocking._
 import zio.test.environment.Live
 import Assertion._
-import SshConn._
+import Zssh._
 import zio.console._
 import zio.test.{DefaultRunnableSpec, ZSpec}
 
-object SshConnZTest {
+object ZsshZTest {
   private val process = for {
-    connJump <- SshConn.make(
+    connJump <- Zssh.make(
       Left("192.168.99.100", 2022), username = Some("test"), password = Some("test"),
     )
     rst <- connJump.sessionM { outerSession =>
-      SshConn.jumpTo("192.168.99.100", 2023)(outerSession) >>= {fwd=>
-        val conn = new SshConn(Right(fwd.getBoundAddress), Some("test"), password = Some("test"))
+      Zssh.jumpTo("192.168.99.100", 2023)(outerSession) >>= { fwd=>
+        val conn = new Zssh(Right(fwd.getBoundAddress), Some("test"), password = Some("test"))
         conn.sessionM { innerSession =>
           script("hostname")(innerSession) <&>
             scpUpload("build.sbt")(innerSession) <&
@@ -71,6 +71,6 @@ object SshConnZTest {
 }
 
 object AllSshConnZTest extends DefaultRunnableSpec {
-  import SshConnZTest._
-  override def spec = suite("All tests")(assertProcess.provideSomeLayer(ZEnv.live >+> SshConn.clientLayer))
+  import ZsshZTest._
+  override def spec = suite("All tests")(assertProcess.provideSomeLayer(ZEnv.live >+> Zssh.clientLayer))
 }

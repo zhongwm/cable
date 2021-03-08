@@ -36,15 +36,15 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfter
 import zio._
 import zio.console._
-import SshConn._
+import Zssh._
 
-class SshConSpec extends AnyWordSpec with BeforeAndAfter {
+class ZsshSpec extends AnyWordSpec with BeforeAndAfter {
   var runtime: Runtime.Managed[zio.ZEnv with Has[SshClient]] =
-    Runtime.unsafeFromLayer(ZEnv.live >+> SshConn.clientLayer)
+    Runtime.unsafeFromLayer(ZEnv.live >+> Zssh.clientLayer)
 
   "SshConn" when {
     "Connecting to ssh host" should {
-      val conn = new SshConn(
+      val conn = new Zssh(
         Left("192.168.99.100", 2022),
         password = Some("test"),
         username = Some("test")
@@ -66,12 +66,12 @@ class SshConSpec extends AnyWordSpec with BeforeAndAfter {
     "Connecting to ssh host monadic" should {
       "be ok" in {
         val process = for {
-          connJump <- SshConn.make(
+          connJump <- Zssh.make(
             Left("192.168.99.100", 2022), username = Some("test"), password = Some("test"),
           )
           rst <- connJump.sessionM { outerSession =>
-            SshConn.jumpTo("192.168.99.100", 2023)(outerSession) >>= {fwd=>
-                val conn = new SshConn(Right(fwd.getBoundAddress), Some("test"), password = Some("test"))
+            Zssh.jumpTo("192.168.99.100", 2023)(outerSession) >>= { fwd=>
+                val conn = new Zssh(Right(fwd.getBoundAddress), Some("test"), password = Some("test"))
                 conn.sessionM { innerSession =>
                   script("hostname")(innerSession) <&>
                     scpUpload("build.sbt")(innerSession) <&

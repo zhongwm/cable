@@ -32,7 +32,7 @@
 
 package zhongwm.cable.hostcon.syntax
 
-import zhongwm.cable.hostcon.SshConn.types._
+import zhongwm.cable.hostcon.Zssh.types._
 
 object STC {
 
