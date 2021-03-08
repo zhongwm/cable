@@ -32,13 +32,13 @@
 
 package zhongwm.cable.hostcon.syntax
 
-import STC._
+import Def._
 import cats.{Id, ~>}
 import zhongwm.cable.hostcon.Zssh
 import zhongwm.cable.hostcon.Zssh.types._
 import zio._
 
-object STC3 {
+object Syntax {
 
   trait HFunctor[F[_[+_], +_]] {
     def apply[I[+_], J[+_]](nt: I ~> J): F[I, +*] ~> F[J, +*]

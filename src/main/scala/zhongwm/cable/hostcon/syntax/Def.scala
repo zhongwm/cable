@@ -34,7 +34,7 @@ package zhongwm.cable.hostcon.syntax
 
 import zhongwm.cable.hostcon.Zssh.types._
 
-object STC {
+object Def {
 
   sealed trait ScaAnsible[+A]
 

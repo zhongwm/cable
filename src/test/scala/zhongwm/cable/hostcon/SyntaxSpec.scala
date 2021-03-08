@@ -35,8 +35,8 @@ package zhongwm.cable.hostcon
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import zhongwm.cable.hostcon.Zssh.types._
-import zhongwm.cable.hostcon.syntax.STC._
-import zhongwm.cable.hostcon.syntax.STC3._
+import zhongwm.cable.hostcon.syntax.Def._
+import zhongwm.cable.hostcon.syntax.Syntax._
 
 class SyntaxSpec extends AnyWordSpec with Matchers {
 
