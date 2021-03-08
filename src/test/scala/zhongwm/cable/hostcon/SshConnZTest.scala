@@ -32,8 +32,6 @@
 
 package zhongwm.cable.hostcon
 
-import java.net.InetSocketAddress
-
 import zio._
 import zio.test._
 import zio.blocking._

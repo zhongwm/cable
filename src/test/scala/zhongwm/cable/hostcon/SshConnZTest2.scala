@@ -31,9 +31,7 @@
 /* Written by Wenming Zhong */
 
 package zhongwm.cable.hostcon
-import java.io.IOException
 
-import org.apache.sshd.client.session.ClientSession
 import zio._
 import zio.blocking._
 import zio.console._
@@ -47,7 +45,7 @@ object SshConnZTest2 {
   }
 
   val jumperLayer = SshConn.sessionL(
-        new SshConn(Left("192.168.99.100", 2022), username = Some("test"), password = Some("test"))
+        Left("192.168.99.100", 2022), username = Some("test"), password = Some("test")
       )
 
   val jumpedLayer =
