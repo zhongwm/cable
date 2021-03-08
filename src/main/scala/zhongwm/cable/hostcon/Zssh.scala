@@ -47,7 +47,7 @@ import org.apache.sshd.common.future.CloseFuture
 import org.apache.sshd.common.util.net.SshdSocketAddress
 import cats._
 import cats.implicits._
-import org.apache.sshd.client.scp.ScpClientCreator
+import org.apache.sshd.scp.client.ScpClientCreator
 import org.apache.sshd.common.channel.PtyMode
 import zhongwm.cable.core.LogbackConfig
 import zio._

@@ -4,7 +4,7 @@
 
 Written with scala2
 
-## Functional, effectful
+## A ssh client that is Functional, effectful, monadic
 
 It's purely functional
 
@@ -12,3 +12,14 @@ It's purely functional
 
 Full support for ZIO composition, ready to be embedded into ZIO project, 
 compatible with ZIO ecosystem.
+
+## Supports ssh proxying
+
+
+
+## Resource Safe
+
+
+## Efficient, high performant
+
+Based on mina-sshd-netty

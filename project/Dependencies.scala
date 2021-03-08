@@ -61,10 +61,10 @@ object Dependencies {
     
     "org.typelevel" %% "kittens" % kittensVersion,
 
-    "org.apache.sshd" % "sshd-netty" % "2.4.0",
+    "org.apache.sshd" % "sshd-netty" % "2.6.0",
     "com.jcraft" % "jsch" % "0.1.55",
     //      "org.apache.sshd" % "sshd-mina" % "2.4.0",
-    "org.apache.sshd" % "sshd-cli" % "2.4.0",
+    "org.apache.sshd" % "sshd-cli" % "2.6.0",
     "net.i2p.crypto" % "eddsa" % "0.3.0",
 
     "com.github.pureconfig" %% "pureconfig" % "0.13.0",
