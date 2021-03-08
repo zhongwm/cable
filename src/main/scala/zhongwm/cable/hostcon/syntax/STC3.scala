@@ -41,11 +41,11 @@ import zio._
 object STC3 {
 
   trait HFunctor[F[_[+_], +_]] {
-    def hmap[I[+_], J[+_]](nt: I ~> J): F[I, +*] ~> F[J, +*]
+    def apply[I[+_], J[+_]](nt: I ~> J): F[I, +*] ~> F[J, +*]
   }
 
   implicit val hostConnHFunctor: HFunctor[HostConn] = new HFunctor[HostConn] {
-    override def hmap[I[+_], J[+_]](nt: I ~> J): HostConn[I, *] ~> HostConn[J, *] = new (HostConn[I, *] ~> HostConn[J, *]) {
+    override def apply[I[+_], J[+_]](nt: I ~> J): HostConn[I, *] ~> HostConn[J, *] = new (HostConn[I, *] ~> HostConn[J, *]) {
       override def apply[A](fa: HostConn[I, A]): HostConn[J, A] = {
         def pl[P[_], Q[_], X](xs: List[P[X]], ntt: P ~> Q): List[Q[X]] = {
           xs match {
@@ -60,24 +60,24 @@ object STC3 {
     }
   }
 
-  type HAlgebra[F[_[+_], +_], G[+_]] = F[G, +*] ~> G
+  type HAlg[F[_[+_], +_], G[+_]] = F[G, +*] ~> G
 
-  def hCata[F[_[+_], +_], G[+_], I](alg: HAlgebra[F, G], hFix: HFix[F, I])(implicit F: HFunctor[F]): G[I] = {
+  def hFold[F[_[+_], +_], G[+_], I](alg: HAlg[F, G], hFix: HFix[F, I])(implicit F: HFunctor[F]): G[I] = {
     val inner = hFix.unfix
-    val nt = F.hmap(
+    val nt = F(
       new (HFix[F, +*] ~> G) {
-        override def apply[A](fa: HFix[F, A]): G[A] = hCata(alg, fa)
+        override def apply[A](fa: HFix[F, A]): G[A] = hFold(alg, fa)
       }
     )(inner)
     alg(nt)
   }
 
   trait HCFunctor[F[_[+_], _, +_], C] {
-    def hmap[I[+_], J[+_]](nt: I ~> J): F[I, C, +*] ~> F[J, C, +*]
+    def apply[I[+_], J[+_]](nt: I ~> J): F[I, C, +*] ~> F[J, C, +*]
   }
 
   implicit def hostConnCHCFunctor[C, T](implicit hcc: HCFix[HostConnC, C, T]): HCFunctor[HostConnC, C] = new HCFunctor[HostConnC, C] {
-    override def hmap[I[+_], J[+_]](nt: I ~> J): HostConnC[I, C, +*] ~> HostConnC[J, C, +*] =
+    override def apply[I[+_], J[+_]](nt: I ~> J): HostConnC[I, C, +*] ~> HostConnC[J, C, +*] =
       new (HostConnC[I, C, +*] ~> HostConnC[J, C, +*]) {
         override def apply[A](fa: HostConnC[I, C, A]): HostConnC[J, C, A] = {
           HostConnC(fa.context, fa.hc, fa.nextLevel.foldLeft(List.empty[J[_]]){ (acc, i) => nt(i) :: acc})
@@ -85,17 +85,17 @@ object STC3 {
       }
   }
 
-  def hcCata[F[_[+_], +_, +_], G[+_], C, I](alg: HCAlgebra[F, G, C], hcFix: HCFix[F, C, I])(implicit F: HCFunctor[F, C]): G[I] = {
+  def hcFold[F[_[+_], +_, +_], G[+_], C, I](alg: HCAlg[F, G, C], hcFix: HCFix[F, C, I])(implicit F: HCFunctor[F, C]): G[I] = {
     val inner = hcFix.unfix
-    val nt = F.hmap(
+    val nt = F(
       new (HCFix[F, C, +*] ~> G) {
-        override def apply[A](fa: HCFix[F, C, A]): G[A] = hcCata(alg, fa)
+        override def apply[A](fa: HCFix[F, C, A]): G[A] = hcFold(alg, fa)
       }
     )(inner)
     alg(nt)
   }
 
-  type HCAlgebra[F[_[+_], +_, +_], G[+_], C] = F[G, C, +*] ~> G
+  type HCAlg[F[_[+_], +_, +_], G[+_], C] = F[G, C, +*] ~> G
 
   type Exec[+A] = Either[Any, A]
 
@@ -112,17 +112,17 @@ object STC3 {
                                                             getA: HFix[F, A] => A,
                                                             ctor: (C, A, List[HCFix[G, C, A]]) => G[HCFix[G, C, +*], C, A]
                                                            ): HCFix[G, C, A] = {
-    def hostConn2HostConnCInner(hc: List[HFix[F, A]], parent: C): List[HCFix[G, C, A]] = { hc match {
+    def hostConn2HostConnCInner(hc: List[HFix[F, A]], parent: C): List[HCFix[G, C, A]] = hc match {
       case Nil =>
         Nil
       case x :: xs =>
         hostConn2HostConnCFg(x, parent, deriveChildContext, getList, getA, ctor) :: hostConn2HostConnCInner(xs, parent)
-    }}
+    }
     val asParentOfChildren = deriveChildContext(hc)
     HCFix(ctor(parentCtx, getA(hc), hostConn2HostConnCInner(getList(hc), asParentOfChildren)))
   }
 
-  val execWithContext: HCAlgebra[HostConnC, Exec, Option[SessionLayer]] = new HCAlgebra[HostConnC, Exec, Option[SessionLayer]] {
+  val execWithContext: HCAlg[HostConnC, Exec, Option[SessionLayer]] = new HCAlg[HostConnC, Exec, Option[SessionLayer]] {
     override def apply[A](fa: HostConnC[Exec, Option[SessionLayer], A]): Exec[A] = {
       fa.hc.action match {
         case ScriptAction(script) =>
@@ -131,7 +131,7 @@ object STC3 {
     }
   }
 
-  val inspection: HAlgebra[HostConn, Inspect] = new HAlgebra[HostConn, Inspect] {
+  val inspection: HAlg[HostConn, Inspect] = new HAlg[HostConn, Inspect] {
     override def apply[A](fa: HostConn[Inspect, A]): Inspect[A] = {
       fa.hc.action match {
         case ScriptAction(script) =>
@@ -142,7 +142,7 @@ object STC3 {
 
   def toLayered[A](a: HCFix[HostConnC, Option[HostConnInfo[_]], A]): HCFix[HostConnC, Option[SessionLayer], A] = {
     val unfix = a.unfix
-    def derive[A, B](parent: Option[HostConnInfo[A]], current: HostConnInfo[B]): SessionLayer = parent match {
+    def derive[T, U](parent: Option[HostConnInfo[T]], current: HostConnInfo[U]): SessionLayer = parent match {
       case None => SshConn.sessionL(Left(current.ho, current.port), current.userName, current.password, current.privKey)
       case Some(p) => SshConn.jumpSessionL(derive(None, p), current.ho, current.port, current.userName, current.password, current.privKey)
     }
@@ -153,7 +153,7 @@ object STC3 {
     val initCtx: Option[HostConnInfo[_]] = None
     val value: HCFix[HostConnC, Option[HostConnInfo[_]], A] = hostConn2HostConnC(sshIO, initCtx, Some(_))
     implicit val layered = toLayered(value)
-    hcCata(execWithContext, layered)
+    hcFold(execWithContext, layered)
   }
 
   def main(args: Array[String]): Unit = {
@@ -165,12 +165,12 @@ object STC3 {
     // val hcf = implicitly[HCFunctor[HostConnC, Option[SessionLayer]]](layered)
     println(layered)
     println("=====")
-    val materialized = hcCata(execWithContext, layered)
+    val materialized = hcFold(execWithContext, layered)
     println(materialized)
 
     def getA[A](h: HostConn[Any, A]) = h.hc
 //    def getList[F, A](h: HostConn[F, A]): List[HFix[HostConn, *]] = h.nextLevel
 //    println(hostConn2HostConnCFg(d1, initCtx, {f => Some(getA(f.unfix))}, )
-    hCata(inspection, d2)
+    hFold(inspection, d2)
   }
 }
