@@ -69,7 +69,7 @@ object ZsshZTest2 {
                 )
     rst <- connJump.sessionM { outerSession =>
              Zssh.jumpTo("192.168.99.100", 2023)(outerSession) >>= { fwd =>
-               val conn = new Zssh(Right(fwd.getBoundAddress), Some("test"), password = Some("test"))
+               val conn = Zssh(Right(fwd.getBoundAddress), Some("test"), password = Some("test"))
                conn.sessionM { innerSession =>
                  Zssh.script("hostname")(innerSession) <&>
                    Zssh.scpUpload("build.sbt")(innerSession) <&

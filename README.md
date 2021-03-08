@@ -15,9 +15,9 @@ It's purely functional
     connJump <- Zssh.make(
           Left("192.168.99.100", 2022), username = Some("test"), password = Some("test"),
         )
-    rst     <- connJump.sessionM { outerSession =>
+    rst      <- connJump.sessionM { outerSession =>
       Zssh.jumpTo("192.168.99.100", 2023)(outerSession) >>= { fwd=>
-        val conn = new Zssh(Right(fwd.getBoundAddress), Some("test"), password = Some("test"))
+        val conn = Zssh(Right(fwd.getBoundAddress), Some("test"), password = Some("test"))
         conn.sessionM { innerSession =>
           script("hostname")(innerSession) <&>
             scpUpload("build.sbt")(innerSession) <&
@@ -25,8 +25,8 @@ It's purely functional
         }
       }
     }
-    _       <- putStrLn(rst._1._2._1.mkString)
-    _       <- putStrLn(rst._1._2._2.mkString)
+    _        <- putStrLn(rst._1._2._1.mkString)
+    _        <- putStrLn(rst._1._2._2.mkString)
 ```
 
 ### Resource Safe

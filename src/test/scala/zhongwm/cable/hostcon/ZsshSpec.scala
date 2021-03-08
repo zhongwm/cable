@@ -44,7 +44,7 @@ class ZsshSpec extends AnyWordSpec with BeforeAndAfter {
 
   "SshConn" when {
     "Connecting to ssh host" should {
-      val conn = new Zssh(
+      val conn = Zssh(
         Left("192.168.99.100", 2022),
         password = Some("test"),
         username = Some("test")
@@ -71,7 +71,7 @@ class ZsshSpec extends AnyWordSpec with BeforeAndAfter {
           )
           rst <- connJump.sessionM { outerSession =>
             Zssh.jumpTo("192.168.99.100", 2023)(outerSession) >>= { fwd=>
-                val conn = new Zssh(Right(fwd.getBoundAddress), Some("test"), password = Some("test"))
+                val conn = Zssh(Right(fwd.getBoundAddress), Some("test"), password = Some("test"))
                 conn.sessionM { innerSession =>
                   script("hostname")(innerSession) <&>
                     scpUpload("build.sbt")(innerSession) <&
