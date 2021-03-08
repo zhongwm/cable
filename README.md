@@ -4,10 +4,11 @@
 
 Written with scala2
 
-## functional, effectful
+## Functional, effectful
 
 It's purely functional
 
 ## Support ZIO style programming
 
-Full support for ZIO composition
+Full support for ZIO composition, ready to be embedded into ZIO project, 
+compatible with ZIO ecosystem.
