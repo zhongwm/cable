@@ -23,7 +23,7 @@ It's purely functional
 ```scala
   val simpleListSample =
     Action(HostConnInfo("192.168.99.100", 2022, Some("user"), None, Some(privateKey)), ScriptAction(scriptIO("hostname"))) +:
-    Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), ScriptAction(scriptIO("hostname")))
+    Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), ScriptAction(scpDownload("/etc/issue")))
 ```
 
 #### Simple nested ssh tasks sample
@@ -31,7 +31,7 @@ It's purely functional
 ```scala
   val simpleNestedSample = Parental(
     JustConnect(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password"), None)),
-    Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), ScriptAction(scriptIO("hostname")))
+    Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), ScriptAction(scpUpload("build.sbt")))
   )
 ```
 
@@ -43,9 +43,9 @@ It's purely functional
       Parental(
         JustConnect(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password"), None: Option[java.security.KeyPair])),
         Action(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password")), ScriptAction(scriptIO("hostname"))) +:
-          Action(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password")), ScriptAction(scriptIO("hostname")))
+          Action(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password")), ScriptAction(scpUpload("build.sbt")))
       ) +:
-      Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), ScriptAction(scriptIO("hostname"))) +:
+      Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), ScriptAction(scpDownload("/etc/issue"))) +:
       HCNil
 ```
 
@@ -53,7 +53,7 @@ It's purely functional
 
 ### Resource Safe
 
-As we can see in the previous sample code, we don't need to concern about connections' management, yet it's managed. 
+As we can see in the previous sample code, we don't need to concern about connections' management, yet it's safely managed. 
 
 Connections are guaranteed to be released correctly
 
