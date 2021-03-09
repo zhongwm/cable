@@ -215,7 +215,10 @@ object Zssh {
           ): UIO[Zssh] =
     IO.succeed(Zssh(addr, username, password, privateKey))
 
-  def sessionL(connInfo: Either[(String, Int), SshdSocketAddress], username: Option[String] = Some("root"), password: Option[String] = None, privateKey: Option[KeyPair] = None) =
+  def sessionL(host: String, port: Int, username: Option[String] = Some("root"), password: Option[String], privateKey: Option[KeyPair] = None): ZLayer[Blocking, IOException, Has[ClientSession]] =
+    sessionL(Left(host, port), username, password, privateKey)
+
+  def sessionL(connInfo: Either[(String, Int), SshdSocketAddress], username: Option[String], password: Option[String], privateKey: Option[KeyPair]): ZLayer[Blocking, IOException, Has[ClientSession]] =
     (clientLayer ++ Blocking.live) >>> ZLayer.fromAcquireRelease(ZIO.environment[Has[SshClient]] >>= { cli =>
       val sshConn = Zssh(connInfo, username, password, privateKey)
       effectBlocking {

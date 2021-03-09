@@ -26,62 +26,47 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- *
- * by Zhongwenming<br>
  */
 
-package zhongwm.cable.core
-import java.io.{ByteArrayInputStream, FileInputStream}
+/* Written by Wenming Zhong */
 
-import cats._
-import cats.implicits._
-import zio._
-import zio.stream._
-import zio.console._
+package zhongwm.cable.hostcon
 
-object ZIS {
-  def main(args: Array[String]): Unit = {
-    case class Exam(person: String, score: Int)
+import TypeDef._
+import zio.Runtime
+import Zssh._
+import Zssh.types._
 
+object EagerExec {
+  import HostConnS._
 
+  case class ZSContext[+A](facts: A, parentLayer: Option[SessionLayer], currentLayer: Option[SessionLayer])
 
-    val examResults = Seq(
-      Exam("Alex", 64),
-      Exam("Michael", 97),
-      Exam("Bill", 77),
-      Exam("John", 78),
-      Exam("Bobby", 71)
-    )
-
-    val groupByKeyResult: ZStream[Any, Nothing, (Int, Int)] =
-      Stream
-        .fromIterable(examResults)
-        .groupByKey(exam => exam.score / 10 * 10) {
-          case (k, s) => Stream.fromEffect(s.runCollect.map(l => k -> l.size))
+  def eager(hs: HostConnS, ctx: ZSContext[_] = ZSContext((), None, None)): ZSContext[_] = {
+    def currentLayer(p: Option[SessionLayer], hc: HostConnInfo): SessionLayer = p match {
+      case Some(l) =>
+        jumpSessionL(l, hc.ho, hc.port, hc.username, hc.password, hc.privateKey)
+      case None =>
+        sessionL(hc.ho, hc.port, hc.username, hc.password, hc.privateKey)
+    }
+    hs match {
+      case Action(hc, action) =>
+        action match {
+          case ScriptAction(a) =>
+            val layer = currentLayer(ctx.parentLayer, hc)
+            val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer))
+            ctx.copy(facts = result, currentLayer = Some(layer))
         }
-
-    val s = Stream.fromInputStream(new FileInputStream("/tmp/adobegc.log"))
-
-    val data = Seq("lines", "sdf", "dfs").mkString("\n")
-    Chunk(data)
-
-    val t = s.transduce(Transducer.utf8Decode)
-    val t2 = t.transduce(Transducer.splitLines).orElse(ZStream.empty)
-    val t3 = t2.mapConcatChunk(Chunk(_))
-    val t2_2 = t2.tap(data =>putStrLn(data)) //.partition(isError, 4)
-    Runtime.default.unsafeRun(t2_2.run(ZSink.foreach(a => putStrLn(a))))
-    /*
-    ZTransducer.splitLines.push.use {push =>
-      for {
-      x <- push(Chunk(data).some)
-      } yield()
-
-    }*/
-
-    val groupedResult: ZStream[Any, Nothing, Chunk[Int]] =
-      Stream
-        .fromIterable(0 to 100)
-        .grouped(50)
-    Runtime.default.unsafeRun(groupedResult.run(ZSink.foreach(t => ZIO.succeed(t.sum))))
+      case JustConnect(hc) =>
+        val layer = currentLayer(ctx.parentLayer, hc)
+        ctx.copy(currentLayer = Some(layer))
+      case Parental(p, s) =>
+        val newLayer = eager(p, ctx)
+        eager(s, newLayer.copy(parentLayer = newLayer.currentLayer, currentLayer = None))
+      case +:(c, n) =>
+        eager(n, eager(c, ctx))
+      case HCNil =>
+        ctx
+    }
   }
 }

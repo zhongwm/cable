@@ -45,14 +45,14 @@ object ZsshZTest2 {
   }
 
   val jumperLayer = Zssh.sessionL(
-        Left("192.168.99.100", 2022), username = Some("test"), password = Some("test")
+        "192.168.99.100", 2022, username = Some("test"), password = Some("test")
       )
 
   val jumpedLayer =
     Zssh.jumpSessionL(jumperLayer, "192.168.99.100", 2023, Some("test"), Some("test"))
 
 
-  
+
   val layer2 =
     ((jumperLayer ++ Blocking.live) >>> Zssh.jumpAddressLayer("192.168.99.100", 2023)) ++ Blocking.live
 
