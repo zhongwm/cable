@@ -11,18 +11,33 @@ It's purely functional
 ## Concise, handy
 ### Supports ssh proxying, in a monadic way!
 
+#### Simple ssh task
+
 ```scala
   val simpleData =
     Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), ScriptAction(scriptIO("hostname")))
+```
 
-  val simpleListedSample =
+#### Simple multiple ssh tasks sample
+
+```scala
+  val simpleListSample =
     Action(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test")), ScriptAction(scriptIO("hostname"))) +:
     Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), ScriptAction(scriptIO("hostname")))
+```
 
+#### Simple nested ssh tasks sample
+
+```scala
   val simpleNestedSample = Parental(
     JustConnect(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test"), None)),
     Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), ScriptAction(scriptIO("hostname")))
   )
+```
+
+#### Compound sample
+
+```scala
   val compoundSample =
     JustConnect(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test"))) +:
       Parental(
