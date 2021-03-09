@@ -11,6 +11,10 @@ It's purely functional
 ## Concise, handy
 ### Supports ssh proxying, in a monadic way!
 
+Your host behind a bastion machine? no problem.
+
+You have a series of remote task to deal with? no problem.
+
 #### Simple ssh task
 
 ```scala
@@ -51,6 +55,12 @@ It's purely functional
 
 [To get started](src/test/scala/zhongwm/cable/hostcon/EagerExecSpec.scala)
 
+### Two Execution models
+
+Two different execution model, eager and connection first. 
+In connection first mode, all connections required are established before doing anything;
+The other mode, eager, carries out the tasks promptly one by one.
+ 
 ### Resource Safe
 
 As we can see in the previous sample code, we don't need to concern about connections' management, yet it's safely managed. 
