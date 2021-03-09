@@ -35,9 +35,9 @@ package zhongwm.cable.hostcon
 import Zssh.types._
 
 object TypeDef {
-  sealed trait SshAction[+A]
+  sealed trait TAction[+A]
 
-  case class ScriptAction[+A](action: SshIO[A]) extends SshAction[A]
+  case class HostAction[+A](action: SshIO[A]) extends TAction[A]
 
   case class HostConnInfo(ho: String,
                               port: Int,
@@ -55,7 +55,7 @@ object TypeDef {
 
     final case class JustConnect(hc: HostConnInfo) extends HostConnS
 
-    final case class Action[+T](hc: HostConnInfo, action: SshAction[T]) extends HostConnS
+    final case class Action[+T](hc: HostConnInfo, action: TAction[T]) extends HostConnS
 
     sealed trait HCNil extends HostConnS {
       override def toString = "HCNil"
@@ -68,7 +68,7 @@ object TypeDef {
     object HCNil extends HCNil
 
     def ssh[A, S <: HostConnS](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], action: SshIO[A], children: HostConnS) = {
-      Parental(Action(HostConnInfo(host, port, username, password, privateKey), ScriptAction(action)), children)
+      Parental(Action(HostConnInfo(host, port, username, password, privateKey), HostAction(action)), children)
     }
 
     def ssh[A, S <: HostConnS](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], children: HostConnS) = {

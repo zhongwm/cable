@@ -52,7 +52,7 @@ object EagerExec {
     hs match {
       case Action(hc, action) =>
         action match {
-          case ScriptAction(a) =>
+          case HostAction(a) =>
             val layer = currentLayer(ctx.parentLayer, hc)
             val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer))
             ctx.copy(facts = result, currentLayer = Some(layer))

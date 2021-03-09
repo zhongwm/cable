@@ -15,15 +15,15 @@ It's purely functional
 
 ```scala
   val simpleData =
-    Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), ScriptAction(scriptIO("hostname")))
+    Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), HostAction(scriptIO("hostname")))
 ```
 
 #### Simple multiple ssh tasks sample
 
 ```scala
   val simpleListSample =
-    Action(HostConnInfo("192.168.99.100", 2022, Some("user"), None, Some(privateKey)), ScriptAction(scriptIO("hostname"))) +:
-    Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), ScriptAction(scpDownload("/etc/issue")))
+    Action(HostConnInfo("192.168.99.100", 2022, Some("user"), None, Some(privateKey)), HostAction(scriptIO("hostname"))) +:
+    Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), HostAction(scpDownload("/etc/issue")))
 ```
 
 #### Simple nested ssh tasks sample
@@ -31,7 +31,7 @@ It's purely functional
 ```scala
   val simpleNestedSample = Parental(
     JustConnect(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password"), None)),
-    Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), ScriptAction(scpUpload("build.sbt")))
+    Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), HostAction(scpUpload("build.sbt")))
   )
 ```
 
@@ -42,10 +42,10 @@ It's purely functional
     JustConnect(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password"))) +:
       Parental(
         JustConnect(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password"), None: Option[java.security.KeyPair])),
-        Action(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password")), ScriptAction(scriptIO("hostname"))) +:
-          Action(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password")), ScriptAction(scpUpload("build.sbt")))
+        Action(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password")), HostAction(scriptIO("hostname"))) +:
+          Action(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password")), HostAction(scpUpload("build.sbt")))
       ) +:
-      Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), ScriptAction(scpDownload("/etc/issue"))) +:
+      Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), HostAction(scpDownload("/etc/issue"))) +:
       HCNil
 ```
 
