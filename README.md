@@ -34,6 +34,8 @@ It's purely functional
       HCNil
 ```
 
+[To get started](src/test/scala/zhongwm/cable/hostcon/EagerExecSpec.scala)
+
 ### Resource Safe
 
 As we can see in the previous sample code, we don't need to concern about connections' management, yet it's managed. 
