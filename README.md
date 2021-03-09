@@ -12,8 +12,8 @@ It's purely functional
 ### Supports ssh proxying, in a monadic way!
 
 Your host behind a bastion machine? no problem.
-
 You have a series of remote task to deal with? no problem.
+And connections are reused by multiple tasks for same machine.
 
 #### Simple ssh task
 
