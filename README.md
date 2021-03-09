@@ -9,7 +9,7 @@ Written with scala2
 It's purely functional
 
 ## Concise, handy
-### Supports ssh proxying, in a monadic way!
+### Supports ssh proxying, in monadic way!
 
 #### Simple ssh task
 
