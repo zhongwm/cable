@@ -43,7 +43,7 @@ object TypeDef {
                               port: Int,
                               username: Option[String] = Some("root"),
                               password: Option[String],
-                              privateKey: Option[KeyPair],
+                              privateKey: Option[KeyPair] = None,
                               )
   sealed trait HostConnS
 

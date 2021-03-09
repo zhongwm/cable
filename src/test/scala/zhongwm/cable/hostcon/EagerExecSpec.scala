@@ -35,26 +35,32 @@ package zhongwm.cable.hostcon
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import TypeDef._
+import Zssh._
 import HostConnS._
 import EagerExec._
 
 class EagerExecSpec extends AnyWordSpec with Matchers {
+  
+  val simpleData =
+    Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), ScriptAction(scriptIO("hostname")))
 
-  val d1 =
-    JustConnect(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test"), None)) +:
-      Parental(
-        JustConnect(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test"), None)),
-        Action(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test"), None), ScriptAction(Zssh.scriptIO("hostname"))) +:
-          Action(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test"), None), ScriptAction(Zssh.scriptIO("hostname")))
-      ) +:
-      Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test"), None), ScriptAction(Zssh.scriptIO("hostname"))) +:
-      HCNil
+  val simpleListedSample =
+    Action(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test")), ScriptAction(scriptIO("hostname"))) +:
+    Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), ScriptAction(scriptIO("hostname")))
 
-  val practicalSimpleData = Parental(
+  val simpleNestedSample = Parental(
     JustConnect(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test"), None)),
-    Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test"), None), ScriptAction(Zssh.scriptIO("hostname")))
+    Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), ScriptAction(scriptIO("hostname")))
   )
-
+  val compoundSample =
+    JustConnect(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test"))) +:
+      Parental(
+        JustConnect(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test"), None: Option[java.security.KeyPair])),
+        Action(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test")), ScriptAction(scriptIO("hostname"))) +:
+          Action(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test")), ScriptAction(scriptIO("hostname")))
+      ) +:
+      Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), ScriptAction(scriptIO("hostname"))) +:
+      HCNil
 
 
   val script =
@@ -88,7 +94,7 @@ class EagerExecSpec extends AnyWordSpec with Matchers {
   "EagerExec" when {
     "execute" should {
       "succeed" in {
-        val result = eager(practicalSimpleData)
+        val result = eager(simpleNestedSample)
         println(result.facts)
       }
     }
