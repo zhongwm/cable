@@ -8,10 +8,10 @@ Written with scala2
 
 It's purely functional
 
-## Concise, handy
+## Practical, functionality rich
 ### Supports ssh proxying, in a monadic way!
 
-Your host behind a bastion machine? no problem.
+Concise, handy, Your host behind a bastion machine? no problem.
 You have a series of remote task to deal with? no problem.
 And connections are reused by multiple tasks for same machine.
 
