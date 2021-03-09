@@ -9,9 +9,12 @@ Written with scala2
 It's purely functional
 
 ## Practical, functionality rich
+
+Concise, handy
+
 ### Supports ssh proxying, in a monadic way!
 
-Concise, handy, Your host behind a bastion machine? no problem.
+Your host behind a bastion machine? no problem.
 You have a series of remote task to deal with? no problem.
 And connections are reused by multiple tasks for same machine.
 
@@ -67,7 +70,7 @@ As we can see in the previous sample code, we don't need to concern about connec
 
 Connections are guaranteed to be released correctly
 
-## Supports ZIO style programming
+## Full Support for ZIO style programming
 
 Full support for ZIO composition, ready to be embedded into ZIO project, 
 compatible with ZIO ecosystem.
