@@ -40,10 +40,6 @@ import zio._
 
 object Syntax {
 
-  trait HFunctor[F[_[+_], +_]] {
-    def apply[I[+_], J[+_]](nt: I ~> J): F[I, +*] ~> F[J, +*]
-  }
-
   implicit val hostConnHFunctor: HFunctor[HostConn] = new HFunctor[HostConn] {
     override def apply[I[+_], J[+_]](nt: I ~> J): HostConn[I, *] ~> HostConn[J, *] = new (HostConn[I, *] ~> HostConn[J, *]) {
       override def apply[A](fa: HostConn[I, A]): HostConn[J, A] = {
@@ -60,8 +56,6 @@ object Syntax {
     }
   }
 
-  type HAlg[F[_[+_], +_], G[+_]] = F[G, +*] ~> G
-
   def hFold[F[_[+_], +_], G[+_], I](alg: HAlg[F, G], hFix: HFix[F, I])(implicit F: HFunctor[F]): G[I] = {
     val inner = hFix.unfix
     val nt = F(
@@ -70,10 +64,6 @@ object Syntax {
       }
     )(inner)
     alg(nt)
-  }
-
-  trait HCFunctor[F[_[+_], _, +_], C] {
-    def apply[I[+_], J[+_]](nt: I ~> J): F[I, C, +*] ~> F[J, C, +*]
   }
 
   implicit def hostConnCHCFunctor[C, T](implicit hcc: HCFix[HostConnC, C, T]): HCFunctor[HostConnC, C] = new HCFunctor[HostConnC, C] {
@@ -94,12 +84,6 @@ object Syntax {
     )(inner)
     alg(nt)
   }
-
-  type HCAlg[F[_[+_], +_, +_], G[+_], C] = F[G, C, +*] ~> G
-
-  type Exec[+A] = Either[Any, A]
-
-  type Inspect[+A] = Unit
 
   def hostConn2HostConnC[C, A](hc: HFix[HostConn, A], initialCtx: C, f: HostConnInfo[_] => C): HCFix[HostConnC, C, A] = {
     val unfix = hc.unfix

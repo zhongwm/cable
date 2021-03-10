@@ -38,31 +38,34 @@ import TypeDef._
 import Zssh._
 import HostConnS._
 import EagerExec._
+import zio.Chunk
 
 class EagerExecSpec extends AnyWordSpec with Matchers {
   
   val simpleData =
-    Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), HostAction(scriptIO("hostname")))
+    Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), SshAction(scriptIO("hostname")))
 
   val simpleListedSample =
-    Action(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test")), HostAction(scriptIO("hostname"))) +:
-    Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), HostAction(scriptIO("hostname")))
+    Action(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test")), SshAction(scriptIO("hostname"))) +:
+    Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), SshAction(scriptIO("hostname")))
 
   val simpleNestedSample = Parental(
     JustConnect(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test"), None)),
-    Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), HostAction(scriptIO("hostname")))
+    Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), SshAction(scriptIO("hostname")))
   )
   val compoundSample =
     JustConnect(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test"))) +:
       Parental(
         JustConnect(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test"), None: Option[java.security.KeyPair])),
-        Action(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test")), HostAction(scriptIO("hostname"))) +:
-          Action(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test")), HostAction(scriptIO("hostname")))
+        Action(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test")), SshAction(scriptIO("hostname"))) +:
+          Action(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test")), SshAction(scriptIO("hostname")))
       ) +:
-      Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), HostAction(scriptIO("hostname"))) +:
+      Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), SshAction(scriptIO("hostname"))) +:
       HCNil
 
 
+  // type1:   Parental[(Int, (Chunk[String], Chunk[String])), (Nested[Unit, Nothing], Nested[Unit, Nothing])]
+  // type2:   Parental[Nothing, Nothing, (Int, (Chunk[String], Chunk[String])), (Nested[Unit, Nothing], Nested[Unit, Nothing])]
   val script =
     ssh(
       "192.168.99.100",

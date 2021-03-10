@@ -32,49 +32,52 @@
 
 package zhongwm.cable.hostcon
 
-import Zssh.types._
+import zhongwm.cable.hostcon.Zssh.types._
 
 object TypeDef {
   sealed trait TAction[+A]
 
-  case class HostAction[+A](action: SshIO[A]) extends TAction[A]
+  case class SshAction[+A](action: SshIO[A]) extends TAction[A]
 
   case class HostConnInfo(ho: String,
-                              port: Int,
-                              username: Option[String] = Some("root"),
-                              password: Option[String],
-                              privateKey: Option[KeyPair] = None,
-                              )
-  sealed trait HostConnS
+                          port: Int,
+                          username: Option[String] = Some("root"),
+                          password: Option[String],
+                          privateKey: Option[KeyPair] = None,
+                         )
+  sealed trait HostConnS[+A]
+
+  case class Nested[+Parent, +Child](a: Parent, b: Child)
 
   object HostConnS {
 
-    final case class Parental[+T <: HostConnS, +U <: HostConnS](hc: T, nextLevel: U) extends HostConnS
+    final case class Parental[+A, +B](hc: HostConnS[A], nextLevel: HostConnS[B]) extends HostConnS[Nested[A, B]]
 
-    final case class +:[+T <: HostConnS, +U <: HostConnS](t: T, next: U) extends HostConnS
+    final case class +:[+A, +B](t: HostConnS[A], next: HostConnS[B]) extends HostConnS[(A, B)]
 
-    final case class JustConnect(hc: HostConnInfo) extends HostConnS
+    final case class JustConnect(hc: HostConnInfo) extends HostConnS[Nothing]
 
-    final case class Action[+T](hc: HostConnInfo, action: TAction[T]) extends HostConnS
+    final case class Action[+A](hc: HostConnInfo, action: TAction[A]) extends HostConnS[A]
 
-    sealed trait HCNil extends HostConnS {
+    sealed trait HCNil extends HostConnS[Nothing] {
+      // def +:[F[+_], B](t: HostConnS[F, B]) = t
       override def toString = "HCNil"
     }
 
-    implicit class HostConnSOps[L <: HostConnS](l: L) {
-      def +:[T <: HostConnS](t: T) = HostConnS.+:(t, l)
+    implicit class HostConnSOps[A](l: HostConnS[A]) {
+      def +:[B](t: HostConnS[B]) = HostConnS.+:(t, l)
     }
 
     object HCNil extends HCNil
 
-    def ssh[A, S <: HostConnS](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], action: SshIO[A], children: HostConnS) = {
-      Parental(Action(HostConnInfo(host, port, username, password, privateKey), HostAction(action)), children)
+    def ssh[A, S <: HostConnS[A], B](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], action: SshIO[A], children: HostConnS[B]) = {
+      Parental(Action(HostConnInfo(host, port, username, password, privateKey), SshAction(action)), children)
     }
 
-    def ssh[A, S <: HostConnS](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], children: HostConnS) = {
+    def ssh[A, S <: HostConnS[A], B](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], children: HostConnS[B]) = {
       Parental(JustConnect(HostConnInfo(host, port, username, password, privateKey)), children)
     }
 
   }
-  
+
 }

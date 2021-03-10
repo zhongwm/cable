@@ -33,6 +33,7 @@
 package zhongwm.cable.hostcon.syntax
 
 import zhongwm.cable.hostcon.Zssh.types._
+import cats.~>
 
 object Def {
 
@@ -62,7 +63,7 @@ object Def {
   case class HCFix[F[_[+_], +_, +_], C, +A](unfix: F[HCFix[F, C, +*], C, A])
   case class HCDFix[F[_[+_, +_], +_, +_], +C, +A](unfix: F[λ[(+[C], +[D]) => HCDFix[F, C, D]], C, A])
 
-  def ssh[A](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], action: SshIO[A], children: HFix[HostConn, Any]*): HFix[HostConn, A] = {
+  def ssh[A](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], action: SshIO[A], children: HFix[HostConn, _]*): HFix[HostConn, A] = {
     HFix(HostConn(HostConnInfo(host, port, username, password, privateKey, ScriptAction(action)), children.toList))
   }
 
@@ -70,5 +71,21 @@ object Def {
   // def ssh[A](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], action: => A, children: HFix[HostConn, Any]*): HFix[HostConn, A] = {
   //   HFix(HostConn(HostConnInfo(host, port, username, password, privateKey, ScriptAction(() => action)), children.toList))
   // }
+
+  type HAlg[F[_[+_], +_], G[+_]] = F[G, +*] ~> G
+
+  trait HCFunctor[F[_[+_], _, +_], C] {
+    def apply[I[+_], J[+_]](nt: I ~> J): F[I, C, +*] ~> F[J, C, +*]
+  }
+
+  trait HFunctor[F[_[+_], +_]] {
+    def apply[I[+_], J[+_]](nt: I ~> J): F[I, +*] ~> F[J, +*]
+  }
+
+  type HCAlg[F[_[+_], +_, +_], G[+_], C] = F[G, C, +*] ~> G
+
+  type Exec[+A] = Either[Any, A]
+
+  type Inspect[+A] = Unit
 
 }

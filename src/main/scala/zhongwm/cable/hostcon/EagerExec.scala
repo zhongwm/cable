@@ -36,13 +36,15 @@ import TypeDef._
 import zio.Runtime
 import Zssh._
 import Zssh.types._
+import zhongwm.cable.hostcon.syntax.Def.HFix
 
 object EagerExec {
   import HostConnS._
 
   case class ZSContext[+A](facts: A, parentLayer: Option[SessionLayer], currentLayer: Option[SessionLayer])
 
-  def eager(hs: HostConnS, ctx: ZSContext[_] = ZSContext((), None, None)): ZSContext[_] = {
+//  def eager[F[+_], A](hs: F[A], ctx: ZSContext[_] = ZSContext((), None, None)): ZSContext[_] = {
+  def eager[A](hs: HostConnS[A], ctx: ZSContext[_] = ZSContext((), None, None)): ZSContext[_] = {
     def currentLayer(p: Option[SessionLayer], hc: HostConnInfo): SessionLayer = p match {
       case Some(l) =>
         jumpSessionL(l, hc.ho, hc.port, hc.username, hc.password, hc.privateKey)
@@ -52,7 +54,7 @@ object EagerExec {
     hs match {
       case Action(hc, action) =>
         action match {
-          case HostAction(a) =>
+          case SshAction(a) =>
             val layer = currentLayer(ctx.parentLayer, hc)
             val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer))
             ctx.copy(facts = result, currentLayer = Some(layer))
