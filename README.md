@@ -29,7 +29,7 @@ And connections are reused by multiple tasks for same machine.
 #### Multiple ssh tasks example
 
 ```scala
-  val simpleListSample =
+  val simpleListTasks =
     Action(HostConnInfo("192.168.99.100", 2022, Some("user"), None, Some(privateKey)), HostAction(scriptIO("cat /etc/issue"))) +:
     Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), HostAction(scpDownload("/etc/issue")))
 ```
@@ -37,7 +37,7 @@ And connections are reused by multiple tasks for same machine.
 #### Nested ssh tasks example
 
 ```scala
-  val simpleNestedSample = Parental(
+  val simpleNestedTasks = Parental(
     JustConnect(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password"), None)),
       Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), HostAction(scpUpload("build.sbt")))
   )
@@ -46,7 +46,7 @@ And connections are reused by multiple tasks for same machine.
 #### Compound example
 
 ```scala
-  val compoundSample =
+  val compoundTasks =
     JustConnect(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password"))) +:
     Parental(
       JustConnect(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password"), None: Option[java.security.KeyPair])),
@@ -60,8 +60,8 @@ And connections are reused by multiple tasks for same machine.
 
 ### Two Execution models
 
-Two different execution model, eager and connection first. 
-In connection first mode, all connections required are established before doing anything;
+Two different execution models, eager and connection first. 
+In connection first mode, all connections are being established before doing anything, then actions get executed in a batch;
 The other mode, eager, carries out the tasks promptly one by one.
  
 ### Resource Safe
