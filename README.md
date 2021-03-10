@@ -4,13 +4,14 @@
 
 Written with scala2
 
-## A ssh client that is Functional, effectful, monadic
+## A ssh client lib that is Functional, Effectful, Monadic
 
-It's purely functional
+It's purely functional, effectful, monadic.
 
-## Practical, functionality rich
+## Practical, Functionality rich
 
-Concise, handy
+At the same time, it's functionality rich, task centric, concise, handy.
+It supports ssh proxying, jumping over networks, tasks chaining.  
 
 ### Supports ssh proxying, in a monadic way!
 
@@ -21,39 +22,38 @@ And connections are reused by multiple tasks for same machine.
 #### Simple ssh task
 
 ```scala
-  val simpleData =
-    Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), HostAction(scriptIO("hostname")))
+  val simpleTask =
+    Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), HostAction(scriptIO("ls /")))
 ```
 
-#### Simple multiple ssh tasks sample
+#### Multiple ssh tasks example
 
 ```scala
   val simpleListSample =
-    Action(HostConnInfo("192.168.99.100", 2022, Some("user"), None, Some(privateKey)), HostAction(scriptIO("hostname"))) +:
+    Action(HostConnInfo("192.168.99.100", 2022, Some("user"), None, Some(privateKey)), HostAction(scriptIO("cat /etc/issue"))) +:
     Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), HostAction(scpDownload("/etc/issue")))
 ```
 
-#### Simple nested ssh tasks sample
+#### Nested ssh tasks example
 
 ```scala
   val simpleNestedSample = Parental(
     JustConnect(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password"), None)),
-    Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), HostAction(scpUpload("build.sbt")))
+      Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), HostAction(scpUpload("build.sbt")))
   )
 ```
 
-#### Compound sample
+#### Compound example
 
 ```scala
   val compoundSample =
     JustConnect(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password"))) +:
-      Parental(
-        JustConnect(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password"), None: Option[java.security.KeyPair])),
+    Parental(
+      JustConnect(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password"), None: Option[java.security.KeyPair])),
         Action(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password")), HostAction(scriptIO("hostname"))) +:
-          Action(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password")), HostAction(scpUpload("build.sbt")))
-      ) +:
-      Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), HostAction(scpDownload("/etc/issue"))) +:
-      HCNil
+        Action(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password")), HostAction(scpUpload("build.sbt")))
+    ) +:
+    Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), HostAction(scpDownload("/etc/issue")))
 ```
 
 [To get started](src/test/scala/zhongwm/cable/hostcon/EagerExecSpec.scala)
@@ -70,10 +70,25 @@ As we can see in the previous sample code, we don't need to concern about connec
 
 Connections are guaranteed to be released correctly
 
-## Full Support for ZIO style programming
+## Full Support for ZIO programming
 
 Full support for ZIO composition, ready to be embedded into ZIO project, 
 compatible with ZIO ecosystem.
+
+```scala
+  val jumperLayer = Zssh.sessionL("192.168.99.100", 2022, username = Some("test"), password = Some("test"))
+
+  val jumpedLayer =
+    Zssh.jumpSessionL(jumperLayer, "192.168.99.100", 2023, Some("test"), Some("test"))
+
+  val layer2 =
+    ((jumperLayer ++ Blocking.live) >>> Zssh.jumpAddressLayer("192.168.99.100", 2023)) ++ Blocking.live
+
+  val layer3 = layer2 >>> Zssh.jumpSshConnL(Some("test"), Some("test"))
+
+  val layer4 = (Zssh.clientLayer ++ layer3 ++ Blocking.live) >>> Zssh.sessionL
+
+```
 
 ```scala
 private val process = for {
@@ -100,6 +115,6 @@ private val process = for {
   } yield xc
 ```
 
-## Efficient, high performant
+## Efficient, fast
 
 Based on mina-sshd-netty
