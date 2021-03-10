@@ -2,7 +2,7 @@
 
 ## It's scala
 
-Written with scala2
+Written in scala2
 
 ## A ssh client lib that is Functional, Effectful, Monadic
 

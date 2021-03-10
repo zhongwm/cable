@@ -53,4 +53,4 @@ libraryDependencies ++= (scalaBinaryVersion.value match {
     case _ =>
         Nil
 })
-libraryDependencies ++= commonDependencies ++ scalazDependencies
+libraryDependencies ++= commonDependencies
