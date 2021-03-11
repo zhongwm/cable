@@ -37,7 +37,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import TypeDef._
 import Zssh._
 import HostConnS._
-import EagerExec._
+//import EagerExec._
 import zio.Chunk
 
 class EagerExecSpec extends AnyWordSpec with Matchers {
@@ -97,8 +97,11 @@ class EagerExecSpec extends AnyWordSpec with Matchers {
   "EagerExec" when {
     "execute" should {
       "succeed" in {
-        val result = eager(simpleNestedSample)
+        val result = simpleNestedSample.eval()
+        val listResult = simpleListedSample.eval()
+//         val compoundResult = compoundSample.eval()
         println(result.facts)
+        println(listResult.facts)
       }
     }
   }

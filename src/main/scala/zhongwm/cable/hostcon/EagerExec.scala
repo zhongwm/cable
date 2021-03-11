@@ -30,21 +30,21 @@
 
 /* Written by Wenming Zhong */
 
-package zhongwm.cable.hostcon
+//package zhongwm.cable.hostcon
+//
+//import TypeDef._
+//import zio.Runtime
+//import Zssh._
+//import Zssh.types._
+//import zhongwm.cable.hostcon.syntax.Def.HFix
 
-import TypeDef._
-import zio.Runtime
-import Zssh._
-import Zssh.types._
-import zhongwm.cable.hostcon.syntax.Def.HFix
+//object EagerExec {
+//  import HostConnS._
 
-object EagerExec {
-  import HostConnS._
 
-  case class ZSContext[+A](facts: A, parentLayer: Option[SessionLayer], currentLayer: Option[SessionLayer])
-
+  /*
 //  def eager[F[+_], A](hs: F[A], ctx: ZSContext[_] = ZSContext((), None, None)): ZSContext[_] = {
-  def eager[A](hs: HostConnS[A], ctx: ZSContext[_] = ZSContext((), None, None)): ZSContext[_] = {
+  def eager[A](hs: HostConnS[A], ctx: ZSContext[A] = ZSContextI(None, Map.empty, None, None)): hs.Repr = {
     def currentLayer(p: Option[SessionLayer], hc: HostConnInfo): SessionLayer = p match {
       case Some(l) =>
         jumpSessionL(l, hc.ho, hc.port, hc.username, hc.password, hc.privateKey)
@@ -57,18 +57,26 @@ object EagerExec {
           case SshAction(a) =>
             val layer = currentLayer(ctx.parentLayer, hc)
             val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer))
-            ctx.copy(facts = result, currentLayer = Some(layer))
+            ctx.copy(facts = Some(result), currentLayer = Some(layer))
         }
       case JustConnect(hc) =>
         val layer = currentLayer(ctx.parentLayer, hc)
         ctx.copy(currentLayer = Some(layer))
       case Parental(p, s) =>
         val newLayer = eager(p, ctx)
-        eager(s, newLayer.copy(parentLayer = newLayer.currentLayer, currentLayer = None))
+        val childCtx = eager(s, newLayer.copy(data = newLayer.data, parentLayer = newLayer.currentLayer, currentLayer = None))
+        val newFacts = Option(Nested(newLayer.facts.get, childCtx.facts.get))
+        /*ctx.copy(facts = newFacts, data = newLayer.data ++ childCtx.data)*/
+        NestedC(newLayer, childCtx)
       case +:(c, n) =>
-        eager(n, eager(c, ctx))
+        val hCtx = eager(c, ctx)
+        val tCtx = eager(n, ctx.copy(data = hCtx.data))
+        /*ctx.copy(facts = Some(hCtx.facts.get, tCtx.facts.get), hCtx.data ++ tCtx.data)*/
+        `C+:`(hCtx, tCtx)
       case HCNil =>
         ctx
     }
   }
-}
+
+  */
+//}
