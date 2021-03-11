@@ -35,10 +35,10 @@ package zhongwm.cable.hostcon
 import zio._
 import zio.blocking._
 import zio.console._
+import Zssh._
 
 object ZsshZTest2 {
   val action = {
-    import Zssh._
     scriptIO("hostname") <&>
       scpUploadIO("build.sbt") <&
       scpDownloadIO("/etc/issue")

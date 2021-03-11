@@ -38,6 +38,13 @@ import zhongwm.cable.hostcon.Zssh
 import zhongwm.cable.hostcon.Zssh.types._
 import zio._
 
+/**
+ * Two Execution models
+ * Two different execution models, eager and connection first.
+ * In connection first mode, all connections are being established before doing anything, then actions get executed in a batch;
+ * The other mode, eager, carries out the tasks promptly one by one.
+ * Connection first mode
+ */
 object Syntax {
 
   implicit val hostConnHFunctor: HFunctor[HostConn] = new HFunctor[HostConn] {

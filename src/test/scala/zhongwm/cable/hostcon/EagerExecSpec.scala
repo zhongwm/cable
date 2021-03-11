@@ -43,7 +43,11 @@ import zio.Chunk
 class EagerExecSpec extends AnyWordSpec with Matchers {
   
   val simpleData =
-    Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), SshAction(scriptIO("hostname")))
+    Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), SshAction(
+      scriptIO("hostname") <&>
+      scpUploadIO("build.sbt") <&
+      scpDownloadIO("/etc/issue")
+    ))
 
   val simpleListedSample =
     Action(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test")), SshAction(scriptIO("hostname"))) +:

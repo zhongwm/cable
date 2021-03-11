@@ -25,6 +25,17 @@ And connections are reused by multiple tasks for same machine.
   val simpleTask =
     Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), HostAction(scriptIO("ls /")))
 ```
+      
+#### Simple ssh task with multiple tasks on a same host or connection.
+```scala
+  val simpleData =
+    Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), SshAction(
+      scriptIO("hostname") <&> 
+      scpUploadIO("build.sbt") <& 
+      scpDownloadIO("/etc/issue")
+    ))
+
+```
 
 #### Multiple ssh tasks example
 
@@ -56,13 +67,18 @@ And connections are reused by multiple tasks for same machine.
     Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), HostAction(scpDownload("/etc/issue")))
 ```
 
+### Running
+
+Tap on `run` to fire task execution. Result types are inferred and reflecting the task composition
+structure.
+
+```scala
+val nestedResult = simpleNestedTasks.run() // Inferred type: NestedC[Unit, (Int, (Chunk[String], Chunk[String]))]
+val listResult = simpleListTasks.run()     // Inferred type: (Int, (Chunk[String], Chunk[String])) +|: (Int, (Chunk[String], Chunk[String]))
+```
+
+
 [To get started](src/test/scala/zhongwm/cable/hostcon/EagerExecSpec.scala)
-
-### Two Execution models
-
-Two different execution models, eager and connection first. 
-In connection first mode, all connections are being established before doing anything, then actions get executed in a batch;
-The other mode, eager, carries out the tasks promptly one by one.
  
 ### Resource Safe
 
@@ -76,7 +92,12 @@ Full support for ZIO composition, ready to be embedded into ZIO project,
 compatible with ZIO ecosystem.
 
 ```scala
-  val jumperLayer = Zssh.sessionL("192.168.99.100", 2022, username = Some("test"), password = Some("test"))
+  val action = {
+    scriptIO("hostname") <&>
+      scpUploadIO("build.sbt") <&
+      scpDownloadIO("/etc/issue")
+  }
+val jumperLayer = Zssh.sessionL("192.168.99.100", 2022, username = Some("test"), password = Some("test"))
 
   val jumpedLayer =
     Zssh.jumpSessionL(jumperLayer, "192.168.99.100", 2023, Some("test"), Some("test"))
