@@ -70,7 +70,7 @@ object TypeDef {
   sealed trait HostConnS[A] {
     type Repr  <: ZSContext[A]
 
-    def eval(ctx: ZSContext[A] = ZSSingleCtx(None, Map.empty, None, None)): Repr
+    def run(ctx: ZSContext[A] = ZSSingleCtx(None, Map.empty, None, None)): Repr
   }
 
   protected[hostcon] def deriveSessionLayer(p: Option[SessionLayer], hc: HostConnInfo): SessionLayer = p match {
@@ -91,9 +91,9 @@ object TypeDef {
 
     final case class Parental[A, B](hc: HostConnS[A], nextLevel: HostConnS[B]) extends HostConnS[Nested[A, B]] {
       type Repr = NestedC[A, B]
-      def eval(ctx: ZSContext[Nested[A, B]]): NestedC[A, B] = {
-        val newLayeredContext = this.hc.eval(ZSSingleCtx(None, ctx.data, ctx.parentLayer, ctx.currentLayer))
-        val childCtx = this.nextLevel.eval(ZSSingleCtx(None, newLayeredContext.data, newLayeredContext.currentLayer, None))
+      def run(ctx: ZSContext[Nested[A, B]]): NestedC[A, B] = {
+        val newLayeredContext = this.hc.run(ZSSingleCtx(None, ctx.data, ctx.parentLayer, ctx.currentLayer))
+        val childCtx = this.nextLevel.run(ZSSingleCtx(None, newLayeredContext.data, newLayeredContext.currentLayer, None))
         // val newFacts = newLayeredContext.facts.flatMap(av => childCtx.facts.map(bv => Nested(av, bv)))
         NestedC(newLayeredContext, childCtx)
       }
@@ -102,9 +102,9 @@ object TypeDef {
     final case class +:[A, B](t: HostConnS[A], next: HostConnS[B]) extends HostConnS[(A, B)] {
       type Repr = +|:[A, B]
 
-      override def eval(ctx: ZSContext[(A, B)]): +|:[A, B] = {
-        val hCtx = t.eval(ZSSingleCtx(None, ctx.data, ctx.parentLayer, ctx.currentLayer))
-        val tCtx = next.eval(ZSSingleCtx(None, ctx.data, ctx.parentLayer, ctx.currentLayer))
+      override def run(ctx: ZSContext[(A, B)]): +|:[A, B] = {
+        val hCtx = t.run(ZSSingleCtx(None, ctx.data, ctx.parentLayer, ctx.currentLayer))
+        val tCtx = next.run(ZSSingleCtx(None, ctx.data, ctx.parentLayer, ctx.currentLayer))
         +|:(hCtx, tCtx)
       }
     }
@@ -112,7 +112,7 @@ object TypeDef {
     final case class JustConnect(hc: HostConnInfo) extends HostConnS[Unit] {
       type Repr = Unital
 
-      override def eval(ctx: ZSContext[Unit]): Unital = {
+      override def run(ctx: ZSContext[Unit]): Unital = {
         val layer = deriveSessionLayer(ctx.parentLayer, hc)
         Unital(ctx.data, ctx.parentLayer, Some(layer))
       }
@@ -121,7 +121,7 @@ object TypeDef {
     final case class Action[A](hc: HostConnInfo, action: TAction[A]) extends HostConnS[A] {
       type Repr = ZSContext[A]
 
-      override def eval(ctx: ZSContext[A]): ZSContext[A] = {
+      override def run(ctx: ZSContext[A]): ZSContext[A] = {
         action match {
           case SshAction(a) =>
             val layer = deriveSessionLayer(ctx.parentLayer, hc)
@@ -135,7 +135,7 @@ object TypeDef {
       type Repr = Unital
       // def +:[F[+_], B](t: HostConnS[F, B]) = t
       override def toString = "HCNil"
-      override def eval(ctx: ZSContext[Unit]): Unital = Unital(ctx.data, ctx.parentLayer, ctx.currentLayer)
+      override def run(ctx: ZSContext[Unit]): Unital = Unital(ctx.data, ctx.parentLayer, ctx.currentLayer)
     }
 
     implicit class HostConnSOps[A](l: HostConnS[A]) {

@@ -97,9 +97,8 @@ class EagerExecSpec extends AnyWordSpec with Matchers {
   "EagerExec" when {
     "execute" should {
       "succeed" in {
-        val result = simpleNestedSample.eval()
-        val listResult = simpleListedSample.eval()
-//         val compoundResult = compoundSample.eval()
+        val result = simpleNestedSample.run()
+        val listResult = simpleListedSample.run()
         println(result.facts)
         println(listResult.facts)
       }
