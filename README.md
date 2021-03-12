@@ -1,12 +1,12 @@
 # A scala ssh client library
 
-## A ssh client lib that is Functional, Effectful, Monadic
+## A ssh client lib that is Functional, Monadic
 
-It's scala, It's purely functional, (the way to use it is) effectful, monadic.
+It's scala, It's purely functional, monadic.
 
 ## Practical, Functionality rich
 
-At the same time, it's functionality rich, task centric, concise, handy.
+At the same time, it's functionality rich, task centric, succinct, handy.
 It supports ssh proxying, jumping over networks, tasks chaining.  
 
 ### Supports ssh proxying, in a monadic way!
@@ -19,17 +19,18 @@ And connections are reused by multiple tasks for same machine.
 
 ```scala
   val simpleTask =
-    Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), HostAction(scriptIO("sleep 5; ls /")))
+    Action("192.168.99.100", 2023, "user", "password", scriptIO("sleep 5; ls /"))
 ```
       
 #### Simple ssh task with multiple tasks on a same host or connection.
 ```scala
   val simpleData =
-    Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), SshAction(
-      scriptIO("hostname") <&> 
-      scpUploadIO("build.sbt") <& 
-      scpDownloadIO("/etc/issue")
-    ))
+    Action(
+      "192.168.99.100", 2023, "user", "password",
+      scriptIO("hostname") <&>
+        scpUploadIO("build.sbt") <&
+        scpDownloadIO("/etc/issue"),
+    )
 
 ```
 
@@ -37,16 +38,16 @@ And connections are reused by multiple tasks for same machine.
 
 ```scala
   val simpleListTasks =
-    Action(HostConnInfo("192.168.99.100", 2022, Some("user"), None, Some(privateKey)), HostAction(scriptIO("cat /etc/issue"))) +:
-    Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), HostAction(scpDownload("/etc/issue")))
+    Action("192.168.99.100", 2022, "user", Some(privateKey), scriptIO("cat /etc/issue")) +:
+    Action("192.168.99.100", 2023, "user", "password", scpDownloadIO("/etc/issue"))
 ```
 
 #### Nested ssh tasks example
 
 ```scala
   val simpleNestedTasks = Parental(
-    JustConnect(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password"), None)),
-      Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), HostAction(scpUpload("build.sbt")))
+    JustConnect("192.168.99.100", 2022, "user", "password"),
+      Action("192.168.99.100", 2023, "user", "password", scpUploadIO("build.sbt"))
   )
 ```
 
@@ -54,13 +55,13 @@ And connections are reused by multiple tasks for same machine.
 
 ```scala
   val compoundTasks =
-    JustConnect(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password"))) +:
+    JustConnect("192.168.99.100", 2022, "user", "password") +:
     Parental(
-      JustConnect(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password"), None: Option[java.security.KeyPair])),
-        Action(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password")), HostAction(scriptIO("hostname"))) +:
-        Action(HostConnInfo("192.168.99.100", 2022, Some("user"), Some("password")), HostAction(scpUpload("build.sbt")))
+      JustConnect("192.168.99.100", 2022, "user", "password" ),
+        Action("192.168.99.100", 2022, "user", "password", scriptIO("hostname")) +:
+        Action("192.168.99.100", 2022, "user", "password", scpUploadIO("build.sbt"))
     ) +:
-    Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), HostAction(scpDownload("/etc/issue")))
+    Action("192.168.99.100", 2023, "user", "password", scpDownloadIO("/etc/issue"))
 ```
 
 ### Running

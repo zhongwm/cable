@@ -41,29 +41,29 @@ import zio.Chunk
 
 class EagerExecSpec extends AnyWordSpec with Matchers {
   
-  val simpleData =
-    Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), SshAction(
+  val simpleTask =
+    Action("192.168.99.100", 2023, "test", "test",
       scriptIO("hostname") <&>
       scpUploadIO("build.sbt") <&
       scpDownloadIO("/etc/issue")
-    ))
+    )
 
-  val simpleListedSample =
-    Action(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test")), SshAction(scriptIO("sleep 5; hostname"))) +:
-    Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), SshAction(scriptIO("hostname")))
+  val flatListTask =
+    Action("192.168.99.100", 2022, "test", "test", scriptIO("sleep 5; hostname")) +:
+    Action("192.168.99.100", 2023, "test", "test", scriptIO("hostname") &> scpDownloadIO("/etc/issue"))
 
-  val simpleNestedSample = Parental(
-    JustConnect(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test"), None)),
-    Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), SshAction(scriptIO("hostname")))
+  val simpleNestedTask = Parental(
+    JustConnect("192.168.99.100", 2022, "test", "test"),
+    Action("192.168.99.100", 2023, "test", "test", scriptIO("hostname"))
   )
   val compoundSample =
-    JustConnect(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test"))) +:
+    JustConnect("192.168.99.100", 2022, "test", "test") +:
       Parental(
-        JustConnect(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test"), None: Option[java.security.KeyPair])),
-        Action(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test")), SshAction(scriptIO("hostname"))) +:
-          Action(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test")), SshAction(scriptIO("hostname")))
+        JustConnect("192.168.99.100", 2022, "test", "test"),
+        Action("192.168.99.100", 2022, "test", "test", scriptIO("hostname")) +:
+          Action("192.168.99.100", 2022, "test", "test", scriptIO("hostname"))
       ) +:
-      Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), SshAction(scriptIO("hostname"))) +:
+      Action("192.168.99.100", 2023, "test", "test", scriptIO("hostname")) +:
       HCNil
 
 
@@ -100,8 +100,8 @@ class EagerExecSpec extends AnyWordSpec with Matchers {
   "EagerExec" when {
     "execute" should {
       "succeed" in {
-        val result = simpleNestedSample.run()
-        val listResult = simpleListedSample.run()
+        val result = simpleNestedTask.run()
+        val listResult = flatListTask.run()
         println(result.facts)
         println(listResult.facts)
       }

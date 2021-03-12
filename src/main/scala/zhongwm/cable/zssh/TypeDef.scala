@@ -123,6 +123,11 @@ object TypeDef {
       }
     }
 
+    object JustConnect {
+      def apply(ho: String, port: Int, username: String, password: String): JustConnect = JustConnect(HostConnInfo(ho, port, Some(username), Some(password), None))
+      def apply(ho: String, port: Int, username: String, privateKey: Option[KeyPair] = None): JustConnect = JustConnect(HostConnInfo(ho, port, Some(username), None, privateKey))
+    }
+
     final case class Action[A](hc: HostConnInfo, action: TAction[A]) extends HostConnS[A] {
       type Repr = ZSContext[A]
 
@@ -134,6 +139,11 @@ object TypeDef {
             ZSSingleCtx(facts = Some(result), ctx.data, ctx.parentLayer, currentLayer = Some(layer))
         }
       }
+    }
+
+    object Action {
+      def apply[A](ho: String, port: Int, username: String, password: String, a: SshIO[A]): Action[A] = Action(HostConnInfo(ho, port, Some(username), Some(password), None), SshAction(a))
+      def apply[A](ho: String, port: Int, username: String, privateKey: Option[KeyPair], a: SshIO[A]): Action[A] = Action(HostConnInfo(ho, port, Some(username), None, privateKey), SshAction(a))
     }
 
     sealed trait HCNil extends HostConnS[Unit] {
