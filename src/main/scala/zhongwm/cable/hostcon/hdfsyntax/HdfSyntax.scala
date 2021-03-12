@@ -30,9 +30,9 @@
 
 /* Written by Wenming Zhong */
 
-package zhongwm.cable.hostcon.syntax
+package zhongwm.cable.hostcon.hdfsyntax
 
-import Def._
+import Hdf._
 import cats.{Id, ~>}
 import zhongwm.cable.hostcon.Zssh
 import zhongwm.cable.hostcon.Zssh.types._
@@ -45,7 +45,7 @@ import zio._
  * The other mode, eager, carries out the tasks promptly one by one.
  * Connection first mode
  */
-object Syntax {
+object HdfSyntax {
 
   implicit val hostConnHFunctor: HFunctor[HostConn] = new HFunctor[HostConn] {
     override def apply[I[+_], J[+_]](nt: I ~> J): HostConn[I, *] ~> HostConn[J, *] = new (HostConn[I, *] ~> HostConn[J, *]) {

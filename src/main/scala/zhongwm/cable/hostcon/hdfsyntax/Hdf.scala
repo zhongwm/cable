@@ -30,12 +30,12 @@
 
 /* Written by Wenming Zhong */
 
-package zhongwm.cable.hostcon.syntax
+package zhongwm.cable.hostcon.hdfsyntax
 
 import zhongwm.cable.hostcon.Zssh.types._
 import cats.~>
 
-object Def {
+object Hdf {
 
   sealed trait ScaAnsible[+A]
 

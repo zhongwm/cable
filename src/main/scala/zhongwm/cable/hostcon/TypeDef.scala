@@ -75,14 +75,14 @@ object TypeDef {
 
   protected[hostcon] def deriveSessionLayer(p: Option[SessionLayer], hc: HostConnInfo): SessionLayer = p match {
     case Some(l) =>
-      println("===============")
+      /*println("===============")
       println("===bridging====")
-      println("===============")
+      println("===============")*/
       jumpSessionL(l, hc.ho, hc.port, hc.username, hc.password, hc.privateKey)
     case None =>
-      println("===============")
+      /*println("===============")
       println("===directco====")
-      println("===============")
+      println("===============")*/
       sessionL(hc.ho, hc.port, hc.username, hc.password, hc.privateKey)
   }
 

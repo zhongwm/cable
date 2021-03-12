@@ -34,7 +34,7 @@ package zhongwm.cable.hostcon
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import zhongwm.cable.hostcon.syntax.Syntax
+import zhongwm.cable.hostcon.hdfsyntax.HdfSyntax
 
 
 class SshActionDefSpec extends AnyWordSpec with Matchers {
@@ -44,7 +44,7 @@ class SshActionDefSpec extends AnyWordSpec with Matchers {
   "Script" when {
     "executed" should {
       "be ok" in {
-        val value = Syntax.executeSshIO(scriptManualDef)
+        val value = HdfSyntax.executeSshIO(scriptManualDef)
         value.isRight shouldBe true
       }
     }

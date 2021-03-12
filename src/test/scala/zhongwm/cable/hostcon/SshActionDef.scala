@@ -32,7 +32,7 @@
 
 package zhongwm.cable.hostcon
 
-import zhongwm.cable.hostcon.syntax.Def._
+import zhongwm.cable.hostcon.hdfsyntax.Hdf._
 
 object SshActionDef {
 

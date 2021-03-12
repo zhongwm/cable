@@ -35,10 +35,10 @@ package zhongwm.cable.hostcon
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import zhongwm.cable.hostcon.Zssh.types._
-import zhongwm.cable.hostcon.syntax.Def._
-import zhongwm.cable.hostcon.syntax.Syntax._
+import zhongwm.cable.hostcon.hdfsyntax.Hdf._
+import zhongwm.cable.hostcon.hdfsyntax.HdfSyntax._
 
-class SyntaxSpec extends AnyWordSpec with Matchers {
+class HdfSyntaxSpec extends AnyWordSpec with Matchers {
 
   import SshActionDef._
   
