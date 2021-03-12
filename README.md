@@ -1,6 +1,6 @@
 # A scala ssh client library
 
-## A ssh client lib that is Functional, Monadic
+## A ssh client lib that is Functional, Effectful, Monadic
 
 It's scala, It's purely functional, (the way to use it is) effectful, monadic.
 
