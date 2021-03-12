@@ -30,22 +30,38 @@
 
 /* Written by Wenming Zhong */
 
-package zhongwm.cable.hostcon
+package zhongwm.cable.zssh
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import zhongwm.cable.hostcon.hdfsyntax.HdfSyntax
+import zhongwm.cable.zssh.Zssh.types._
+import zhongwm.cable.zssh.hdfsyntax.Hdf._
+import zhongwm.cable.zssh.hdfsyntax.HdfSyntax._
 
-
-class SshActionDefSpec extends AnyWordSpec with Matchers {
+class HdfSyntaxSpec extends AnyWordSpec with Matchers {
 
   import SshActionDef._
-
+  
   "Script" when {
     "executed" should {
       "be ok" in {
-        val value = HdfSyntax.executeSshIO(scriptManualDef)
-        value.isRight shouldBe true
+        val value = executeSshIO(script)
+        value.isRight should be(true)
+      }
+    }
+
+    "Some random test code" should {
+      "be ok" in {
+        val initCtx: Option[HostConnInfo[_]] = None
+        val result = hostConn2HostConnC(script, initCtx, Some(_))
+        println(s"value: $result")
+        implicit val layered: HCFix[HostConnC, Option[SessionLayer], _] = toLayered(result)
+        // val hcf = implicitly[HCFunctor[HostConnC, Option[SessionLayer]]](layered)
+        println(s"layered: $layered")
+        val materialized = hcFold(execWithContext, layered)
+        println(materialized)
+
+        hFold(inspection, script)
       }
     }
   }

@@ -30,10 +30,10 @@
 
 /* Written by Wenming Zhong */
 
-package zhongwm.cable.hostcon
+package zhongwm.cable.zssh
 
-import zhongwm.cable.hostcon.Zssh.{jumpSessionL, sessionL}
-import zhongwm.cable.hostcon.Zssh.types._
+import zhongwm.cable.zssh.Zssh.{jumpSessionL, sessionL}
+import zhongwm.cable.zssh.Zssh.types._
 import zio.Runtime
 
 object TypeDef {
@@ -51,20 +51,25 @@ object TypeDef {
   case class Nested[+Parent, +Child](a: Parent, b: Child)
 
   sealed abstract class ZSContext[A](val facts: Option[A], val data: Map[String, _], val parentLayer: Option[SessionLayer], val currentLayer: Option[SessionLayer])
+
   case class ZSSingleCtx[A](override val facts: Option[A], override val data: Map[String, _], override val parentLayer: Option[SessionLayer], override val currentLayer: Option[SessionLayer])
     extends ZSContext(
       facts, data, parentLayer, currentLayer)
+
   case class +|:[A, B](a: ZSContext[A], b: ZSContext[B])
     extends ZSContext[(A, B)](
       a.facts.flatMap{av=>b.facts.map{bv => (av, bv)}}, a.data ++ b.data, a.parentLayer, a.currentLayer)
+
+  /**
+   * {{{val nc1 = NestedC(ZSSingleCtx(Some(1), Map.empty, None, None), ZSSingleCtx(Some(""), Map.empty, None, None))}}}
+   */
   case class NestedC[A, B](a: ZSContext[A], b: ZSContext[B])
     extends ZSContext[Nested[A, B]](
       a.facts.flatMap{av=>b.facts.map{bv=>Nested(av, bv)}}, a.data ++ b.data, a.parentLayer, a.currentLayer)
+
   case class Unital(override val data: Map[String, _], override val parentLayer: Option[SessionLayer], override val currentLayer: Option[SessionLayer])
     extends ZSContext[Unit](
       Some(()), data, currentLayer, currentLayer)
-
-  val nc1 = NestedC(ZSSingleCtx(Some(1), Map.empty, None, None), ZSSingleCtx(Some(""), Map.empty, None, None))
 
 
   sealed trait HostConnS[A] {
@@ -73,7 +78,7 @@ object TypeDef {
     def run(ctx: ZSContext[A] = ZSSingleCtx(None, Map.empty, None, None)): Repr
   }
 
-  protected[hostcon] def deriveSessionLayer(p: Option[SessionLayer], hc: HostConnInfo): SessionLayer = p match {
+  protected[zssh] def deriveSessionLayer(p: Option[SessionLayer], hc: HostConnInfo): SessionLayer = p match {
     case Some(l) =>
       /*println("===============")
       println("===bridging====")

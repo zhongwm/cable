@@ -30,7 +30,7 @@
  * by Zhongwenming<br>
  */
 
-package zhongwm.cable.hostcon
+package zhongwm.cable.zssh
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, FileInputStream, IOException, OutputStream, PipedInputStream, PipedOutputStream}
 import java.net.{InetSocketAddress, SocketAddress}
 import java.nio.charset.StandardCharsets
@@ -45,7 +45,6 @@ import org.apache.sshd.client.session.ClientSession
 import org.apache.sshd.client.session.forward.{ExplicitPortForwardingTracker, PortForwardingTracker}
 import org.apache.sshd.common.future.CloseFuture
 import org.apache.sshd.common.util.net.SshdSocketAddress
-import cats._
 import cats.implicits._
 import org.apache.sshd.scp.client.ScpClientCreator
 import org.apache.sshd.common.channel.PtyMode

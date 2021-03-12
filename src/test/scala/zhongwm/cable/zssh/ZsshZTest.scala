@@ -30,61 +30,47 @@
 
 /* Written by Wenming Zhong */
 
-package zhongwm.cable.hostcon
+package zhongwm.cable.zssh
 
 import zio._
+import zio.test._
 import zio.blocking._
-import zio.console._
+import zio.test.environment.Live
+import Assertion._
 import Zssh._
+import zio.console._
+import zio.test.{DefaultRunnableSpec, ZSpec}
 
-object ZsshZTest2 {
-  val action = {
-    scriptIO("hostname") <&>
-      scpUploadIO("build.sbt") <&
-      scpDownloadIO("/etc/issue")
-  }
-
-  val jumperLayer = Zssh.sessionL(
-        "192.168.99.100", 2022, username = Some("test"), password = Some("test")
-      )
-
-  val jumpedLayer =
-    Zssh.jumpSessionL(jumperLayer, "192.168.99.100", 2023, Some("test"), Some("test"))
-
-
-
-  val layer2 =
-    ((jumperLayer ++ Blocking.live) >>> Zssh.jumpAddressLayer("192.168.99.100", 2023)) ++ Blocking.live
-
-  val layer3 = layer2 >>> Zssh.jumpSshConnL(Some("test"), Some("test"))
-
-  val layer4 = (Zssh.clientLayer ++ layer3 ++ Blocking.live) >>> Zssh.sessionL
-
-
+object ZsshZTest {
   private val process = for {
     connJump <- Zssh.make(
-                  Left("192.168.99.100", 2022),
-                  username = Some("test"),
-                  password = Some("test")
-                )
+      Left("192.168.99.100", 2022), username = Some("test"), password = Some("test"),
+    )
     rst <- connJump.sessionM { outerSession =>
-             Zssh.jumpTo("192.168.99.100", 2023)(outerSession) >>= { fwd =>
-               val conn = Zssh(Right(fwd.getBoundAddress), Some("test"), password = Some("test"))
-               conn.sessionM { innerSession =>
-                 Zssh.script("hostname")(innerSession) <&>
-                   Zssh.scpUpload("build.sbt")(innerSession) <&
-                   Zssh.scpDownload("/etc/issue")(innerSession)
-               }
-             }
-           }
+      Zssh.jumpTo("192.168.99.100", 2023)(outerSession) >>= { fwd=>
+        val conn = Zssh(Right(fwd.getBoundAddress), Some("test"), password = Some("test"))
+        conn.sessionM { innerSession =>
+          script("hostname")(innerSession) <&>
+            scpUpload("build.sbt")(innerSession) <&
+            scpDownload("/etc/issue")(innerSession)
+        }
+      }
+    }
     _ <- putStrLn(rst._1._2._1.mkString)
     _ <- putStrLn(rst._1._2._2.mkString)
     xc <- ZIO.succeed {
-            zio.ExitCode(rst._1._1)
-          }
-  } yield xc
+      zio.ExitCode(rst._1._1)
+    }
+  } yield (xc)
 
-  def main(args: Array[String]): Unit =
-    Runtime.default.unsafeRun(action.provideCustomLayer(jumpedLayer))
+  val assertProcess = suite("Jump ssh monadic") {
+    testM ("should be ok") {
+      assertM(process)(equalTo(ExitCode(0)))
+    }
+  }
+}
 
+object AllSshConnZTest extends DefaultRunnableSpec {
+  import ZsshZTest._
+  override def spec = suite("All tests")(assertProcess.provideSomeLayer(ZEnv.live >+> Zssh.clientLayer))
 }

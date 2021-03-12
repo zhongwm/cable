@@ -30,14 +30,13 @@
 
 /* Written by Wenming Zhong */
 
-package zhongwm.cable.hostcon
+package zhongwm.cable.zssh
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import TypeDef._
 import Zssh._
 import HostConnS._
-//import EagerExec._
 import zio.Chunk
 
 class EagerExecSpec extends AnyWordSpec with Matchers {

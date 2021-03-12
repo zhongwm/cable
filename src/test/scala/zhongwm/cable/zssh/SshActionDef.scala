@@ -30,9 +30,9 @@
 
 /* Written by Wenming Zhong */
 
-package zhongwm.cable.hostcon
+package zhongwm.cable.zssh
 
-import zhongwm.cable.hostcon.hdfsyntax.Hdf._
+import zhongwm.cable.zssh.hdfsyntax.Hdf._
 
 object SshActionDef {
 

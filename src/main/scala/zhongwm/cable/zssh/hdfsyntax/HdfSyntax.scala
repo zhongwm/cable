@@ -30,12 +30,12 @@
 
 /* Written by Wenming Zhong */
 
-package zhongwm.cable.hostcon.hdfsyntax
+package zhongwm.cable.zssh.hdfsyntax
 
 import Hdf._
 import cats.{Id, ~>}
-import zhongwm.cable.hostcon.Zssh
-import zhongwm.cable.hostcon.Zssh.types._
+import zhongwm.cable.zssh.Zssh
+import zhongwm.cable.zssh.Zssh.types._
 import zio._
 
 /**
@@ -97,6 +97,14 @@ object HdfSyntax {
     HCFix(HostConnC(initialCtx, unfix.hc, unfix.nextLevel.foldLeft(List.empty[HCFix[HostConnC, C, _]]){(a, i) => hostConn2HostConnC(i, f(unfix.hc), f) :: a }))
   }
 
+  /**
+   *
+   * {{{
+   * def getA[A](h: HostConn[Any, A]) = h.hc
+   * def getList[F, A](h: HostConn[F, A]): List[HFix[HostConn, *]] = h.nextLevel
+   * println(hostConn2HostConnCFg(d1, initCtx, {f => Some(getA(f.unfix))}, )
+   * }}}
+   */
   def hostConn2HostConnCFg[F[_[+_], +_], G[_[+_], +_, +_], C, A](hc: HFix[F, A], parentCtx: C,
                                                             deriveChildContext: HFix[F, A] => C,
                                                             getList: HFix[F, A] => List[HFix[F, A]],

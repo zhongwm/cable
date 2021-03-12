@@ -30,7 +30,7 @@
 
 /* Written by Wenming Zhong */
 
-package zhongwm.cable.hostcon
+package zhongwm.cable.zssh
 import org.apache.sshd.client.SshClient
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfter

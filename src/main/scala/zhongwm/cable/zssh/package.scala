@@ -26,28 +26,12 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
+ *
+ * by Zhongwenming<br>
  */
 
-/* Written by Wenming Zhong */
+package zhongwm.cable
 
-package zhongwm.cable.hostcon
+package object zssh {
 
-import java.io.IOException
-
-import org.apache.sshd.client.session.ClientSession
-import org.scalatest.flatspec.AnyFlatSpecLike
-import zhongwm.cable.hostcon.Zssh.types._
-import zio.{Has, ZIO}
-import zio.blocking.Blocking
-
-object ZsshTypeTest extends AnyFlatSpecLike {
-
-  "SshConn Type Test Suite" should "ss" in{
-    // This should compile.
-    val ev1exists =
-      implicitly[ZIO[Blocking with Has[ClientSession], IOException, Int] <:< SshIO[Int]]
-
-    // This should not compile.
-    // val ev2shouldNotExist = implicitly[ZIO[String with Has[ClientSession], IOException, Int] <:< SshIO[Int]]
-  }
 }

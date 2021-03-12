@@ -30,9 +30,9 @@
 
 /* Written by Wenming Zhong */
 
-package zhongwm.cable.hostcon.hdfsyntax
+package zhongwm.cable.zssh.hdfsyntax
 
-import zhongwm.cable.hostcon.Zssh.types._
+import zhongwm.cable.zssh.Zssh.types._
 import cats.~>
 
 object Hdf {
