@@ -60,8 +60,6 @@ import zio.duration._
 import scala.io.Source
 
 case class Zssh(
-               /*host: Option[String],
-              val port: Option[Int] = Some(22),*/
                connInfo: Either[(String, Int), SshdSocketAddress],
                username: Option[String] = Some("root"),
                password: Option[String] = None,
@@ -142,7 +140,7 @@ case class Zssh(
 
 object Zssh {
 
-  LogbackConfig.configLogbackForLib()
+  LogbackConfig.configWarnLogbackForLib()
 
   val log = LoggerFactory.getLogger(s"${classOf[Zssh].getPackage.getName}.Zssh")
 

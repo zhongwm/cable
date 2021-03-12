@@ -38,8 +38,13 @@ import ch.qos.logback.classic.joran.JoranConfigurator
 import ch.qos.logback.core.joran.spi.JoranException
 import org.slf4j.LoggerFactory
 
+/**
+ * Mina-sshd-netty defaults to debug log level, bringing a lot of very low level logs, To avoid the
+ * logback config xml file conflicting and to get a friendly log verbosity level, so be this class
+ * based config.
+ */
 object LogbackConfig {
-  private val logbackConfigXml =
+  private val logbackWarnLevelConfigXml =
     """<?xml version="1.0" encoding="UTF-8"?>
       |<configuration>
       |
@@ -79,9 +84,45 @@ object LogbackConfig {
       |</configuration>
       |""".stripMargin
 
-  def configLogbackForLib(): Unit = {
+  private val logbackDebugLevelConfigXml =
+    """<?xml version="1.0" encoding="UTF-8"?>
+      |<configuration>
+      |
+      |    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+      |        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      |            <level>INFO</level>
+      |        </filter>
+      |        <!-- <encoder>
+      |            <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg {%mdc}%n</pattern>
+      |        </encoder> -->
+      |    </appender>
+      |
+      |    <!-- <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+      |        <file>target/myapp-dev.log</file>
+      |        <encoder>
+      |            <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg {%mdc}%n</pattern>
+      |        </encoder>
+      |    </appender> -->
+      |
+      |
+      |    <root level="DEBUG">
+      |        <appender-ref ref="STDOUT"/>
+      |        <!-- <appender-ref ref="FILE"/> -->
+      |    </root>
+      |    <logger name="org.apache.sshd" level="DEBUG">
+      |        <appender-ref ref="STDOUT" />
+      |        <!-- <appender-ref ref="FILE"/> -->
+      |    </logger>
+      |    <logger name="io.netty.bootstrap.Bootstrap" level="DEBUG">
+      |        <appender-ref ref="STDOUT"/>
+      |        <!-- <appender-ref ref="FILE"/> -->
+      |    </logger>
+      |</configuration>
+      |""".stripMargin
+
+  private def configLogbackForLib0(xmlStr: String): Unit = {
     val context = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
-    val logbackManualConfigStream = new ByteArrayInputStream(logbackConfigXml.getBytes)
+    val logbackManualConfigStream = new ByteArrayInputStream(xmlStr.getBytes)
     try {
       val configurator = new JoranConfigurator
       configurator.setContext(context)
@@ -92,5 +133,13 @@ object LogbackConfig {
     } finally {
       logbackManualConfigStream.close()
     }
+  }
+
+  def configWarnLogbackForLib(): Unit = {
+    configLogbackForLib0(logbackWarnLevelConfigXml)
+  }
+
+  def configDebugLogbackForLib(): Unit = {
+    configLogbackForLib0(logbackDebugLevelConfigXml)
   }
 }
