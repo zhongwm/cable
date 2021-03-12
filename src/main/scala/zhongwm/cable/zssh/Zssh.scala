@@ -294,10 +294,6 @@ object Zssh {
             SshdSocketAddress.LOCALHOST_ADDRESS,
             new SshdSocketAddress(targetIp, targetPort)
           )
-          val address = localFwTracker.getBoundAddress
-          if (log.isDebugEnabled) log.debug(s"Local forward is open, ${localFwTracker.isOpen}")
-          if (log.isDebugEnabled) log.debug(s"Local bound address: ${address}")
-          if (log.isDebugEnabled) log.debug(s"Local address: ${localFwTracker.getBoundAddress}")
           localFwTracker
         })
       } yield fwd
@@ -376,10 +372,10 @@ object Zssh {
         val peis = new PipedInputStream(peos)
         //            val out = new ByteArrayOutputStream
         //            val errOut = new ByteArrayOutputStream
-        if (log.isDebugEnabled) log.debug("created reactive streams")
+        if (log.isDebugEnabled) log.debug("Created streams")
         ch.setOut(pos)
         ch.setErr(peos)
-        if (log.isDebugEnabled) log.debug("open channel and wait.")
+        if (log.isDebugEnabled) log.debug("Open channel and wait.")
         ch.open().await()
         (ch, pos, pis, peos, peis)
       }.mapError {
@@ -415,14 +411,14 @@ object Zssh {
           .aggregate(Transducer.utf8Decode)
           .aggregate(Transducer.splitLines)
           .mapM { v =>
-            /*putStr("output1") *> putStrLn(v)*/IO.effect(if (log.isDebugEnabled) log.debug(s"output1: $v")).ignore *> UIO.succeed(v)
+            IO.effect(if (log.isDebugEnabled) log.debug(s"output1: $v")).ignore *> UIO.succeed(v)
           } // .schedule(Schedule.fixed(100.milliseconds))
         val ss2 = Stream
           .fromInputStream(ct._5)
           .aggregate(Transducer.utf8Decode)
           .aggregate(Transducer.splitLines)
           .mapM { v =>
-            /*putStr("output2") *> putStrLn(v)*/ IO.effect(if (log.isDebugEnabled) log.debug(s"output2: $v")).ignore *> UIO.succeed(v)
+            IO.effect(if (log.isDebugEnabled) log.debug(s"output2: $v")).ignore *> UIO.succeed(v)
           }
         ss1.runCollect <*> ss2.runCollect // ss1.merge(ss2).runCollect
       }).mapError {
@@ -433,7 +429,7 @@ object Zssh {
         case a: Any =>
           new IOException(s"Cause: `${a.getClass.getCanonicalName}`: $a")
       }
-      _ <- ZIO.effect{if (log.isDebugEnabled) log.debug("begin receiving from reactive streams")}.ignore *> mapToIOE(effectBlocking {
+      _ <- ZIO.effect{if (log.isDebugEnabled) log.debug("Begin receiving from streams")}.ignore *> mapToIOE(effectBlocking {
         if (log.isDebugEnabled) log.debug("Waiting for event.")
         setup._1.waitFor(
           util.EnumSet.of(ClientChannelEvent.CLOSED, ClientChannelEvent.EOF, ClientChannelEvent.EXIT_STATUS),

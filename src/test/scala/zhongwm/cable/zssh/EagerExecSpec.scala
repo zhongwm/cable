@@ -49,7 +49,7 @@ class EagerExecSpec extends AnyWordSpec with Matchers {
     ))
 
   val simpleListedSample =
-    Action(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test")), SshAction(scriptIO("hostname"))) +:
+    Action(HostConnInfo("192.168.99.100", 2022, Some("test"), Some("test")), SshAction(scriptIO("sleep 5; hostname"))) +:
     Action(HostConnInfo("192.168.99.100", 2023, Some("test"), Some("test")), SshAction(scriptIO("hostname")))
 
   val simpleNestedSample = Parental(

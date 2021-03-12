@@ -1,12 +1,8 @@
 # A scala ssh client library
 
-## It's scala
+## A ssh client lib that is Functional, monadic
 
-Written in scala2
-
-## A ssh client lib that is Functional, Effectful, Monadic
-
-It's purely functional, effectful, monadic.
+It's scala, It's purely functional, (the way to use it is) effectful, monadic.
 
 ## Practical, Functionality rich
 
@@ -23,7 +19,7 @@ And connections are reused by multiple tasks for same machine.
 
 ```scala
   val simpleTask =
-    Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), HostAction(scriptIO("ls /")))
+    Action(HostConnInfo("192.168.99.100", 2023, Some("user"), Some("password")), HostAction(scriptIO("sleep 5; ls /")))
 ```
       
 #### Simple ssh task with multiple tasks on a same host or connection.
