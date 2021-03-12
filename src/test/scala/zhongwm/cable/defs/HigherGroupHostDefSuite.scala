@@ -34,7 +34,6 @@ package zhongwm.cable.defs
 
 import zio.test._
 import Assertion._
-import cats._
 import cats.implicits._
 import HigherGroupHostDefSuite.higherGroupHostDefsSpec
 

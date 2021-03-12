@@ -47,34 +47,34 @@ object LogbackConfig {
       |        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
       |            <level>INFO</level>
       |        </filter>
-      |        <encoder>
+      |        <!-- <encoder>
       |            <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg {%mdc}%n</pattern>
-      |        </encoder>
+      |        </encoder> -->
       |    </appender>
       |
-      |    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+      |    <!-- <appender name="FILE" class="ch.qos.logback.core.FileAppender">
       |        <file>target/myapp-dev.log</file>
       |        <encoder>
       |            <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg {%mdc}%n</pattern>
       |        </encoder>
-      |    </appender>
+      |    </appender> -->
       |
       |
       |    <root level="DEBUG">
       |        <appender-ref ref="STDOUT"/>
-      |        <appender-ref ref="FILE"/>
+      |        <!-- <appender-ref ref="FILE"/> -->
       |    </root>
       |    <logger name="org.apache.sshd" level="WARN">
       |        <appender-ref ref="STDOUT" />
-      |        <appender-ref ref="FILE"/>
+      |        <!-- <appender-ref ref="FILE"/> -->
       |    </logger>
       |    <logger name="io.netty.bootstrap.Bootstrap" level="ERROR">
       |        <appender-ref ref="STDOUT"/>
-      |        <appender-ref ref="FILE"/>
+      |        <!-- <appender-ref ref="FILE"/> -->
       |    </logger>
       |    <logger name="io.netty" level="WARN">
       |        <appender-ref ref="STDOUT"/>
-      |        <appender-ref ref="FILE"/>
+      |        <!-- <appender-ref ref="FILE"/> -->
       |    </logger>
       |</configuration>
       |""".stripMargin

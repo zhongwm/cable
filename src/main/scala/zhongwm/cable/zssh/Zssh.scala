@@ -37,7 +37,6 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 import java.security.{KeyPair, PublicKey}
 import java.util
-
 import org.apache.sshd.client.SshClient
 import org.apache.sshd.client.channel.{ChannelExec, ClientChannel, ClientChannelEvent}
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier
@@ -46,6 +45,8 @@ import org.apache.sshd.client.session.forward.{ExplicitPortForwardingTracker, Po
 import org.apache.sshd.common.future.CloseFuture
 import org.apache.sshd.common.util.net.SshdSocketAddress
 import cats.implicits._
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.apache.sshd.scp.client.ScpClientCreator
 import org.apache.sshd.common.channel.PtyMode
 import zhongwm.cable.core.LogbackConfig
@@ -66,6 +67,7 @@ case class Zssh(
                password: Option[String] = None,
                privateKey: Option[KeyPair] = None
              ) {
+  import Zssh.log
 
   def mapToIOE[R, A](z: ZIO[R, Throwable, A]): ZIO[R, IOException, A] =
     z.mapError {
@@ -96,12 +98,12 @@ case class Zssh(
           case ex: IOException =>
             ex
           case ex =>
-            println(s"It's odd that zio throws an exception other than IOException: ${ex}")
+            if (log.isWarnEnabled) log.warn(s"It's odd that zio throws an exception other than IOException: ${ex}")
             new IOException(ex)
         }.bracket { x =>
           ZIO.effectTotal {
             x.close()
-            println("Session closed")
+            if (log.isDebugEnabled) log.debug("Session closed")
           }
         } {
           routine(_)
@@ -141,6 +143,8 @@ case class Zssh(
 object Zssh {
 
   LogbackConfig.configLogbackForLib()
+
+  val log = LoggerFactory.getLogger(s"${classOf[Zssh].getPackage.getName}.Zssh")
 
   object types {
     /**
@@ -200,9 +204,9 @@ object Zssh {
     } { c: SshClient =>
       effectBlocking {
         c.stop()
-        println("Stopped client.")
+        if (log.isDebugEnabled) log.debug("Stopped client.")
         c.close()
-        println("Closed Client.")
+        if (log.isDebugEnabled) log.debug("Closed Client.")
       }.either
     }
 
@@ -238,13 +242,13 @@ object Zssh {
         case ex: IOException =>
           ex
         case ex =>
-          println(s"It's odd that zio throws an exception other than IOException: ${ex}")
+          if(log.isWarnEnabled) log.warn(s"It's odd that zio throws an exception other than IOException: ${ex}")
           new IOException(ex)
       }
     }) { x =>
       ZIO.effectTotal {
         x.close()
-        println("Session closed")
+        if (log.isDebugEnabled) log.debug("Session closed")
       }
     }
 
@@ -268,7 +272,7 @@ object Zssh {
   }) { x =>
     ZIO.effectTotal {
       x.close()
-      println("Session closed")
+      if (log.isDebugEnabled) log.debug("Session closed")
     }
   })
 
@@ -291,9 +295,9 @@ object Zssh {
             new SshdSocketAddress(targetIp, targetPort)
           )
           val address = localFwTracker.getBoundAddress
-          println(s"Local forward is open, ${localFwTracker.isOpen}")
-          println(s"Local bound address: ${address}")
-          println(s"Local address: ${localFwTracker.getBoundAddress}")
+          if (log.isDebugEnabled) log.debug(s"Local forward is open, ${localFwTracker.isOpen}")
+          if (log.isDebugEnabled) log.debug(s"Local bound address: ${address}")
+          if (log.isDebugEnabled) log.debug(s"Local address: ${localFwTracker.getBoundAddress}")
           localFwTracker
         })
       } yield fwd
@@ -363,7 +367,7 @@ object Zssh {
   def script(cmd: String)(cs: ClientSession) =
     for {
       setup <- effectBlocking {
-        println(s"Executing command $cmd")
+        if (log.isDebugEnabled) log.debug(s"Executing command $cmd")
         val ch = cs.createExecChannel(cmd)
         ch.setUsePty(false)
         val pos  = new PipedOutputStream
@@ -372,10 +376,10 @@ object Zssh {
         val peis = new PipedInputStream(peos)
         //            val out = new ByteArrayOutputStream
         //            val errOut = new ByteArrayOutputStream
-        println("created reactive streams")
+        if (log.isDebugEnabled) log.debug("created reactive streams")
         ch.setOut(pos)
         ch.setErr(peos)
-        println("open channel and wait.")
+        if (log.isDebugEnabled) log.debug("open channel and wait.")
         ch.open().await()
         (ch, pos, pis, peos, peis)
       }.mapError {
@@ -385,40 +389,25 @@ object Zssh {
           new IOException("Non-IOException made IOE", ex)
       }
       outS <- (ZIO.bracket(ZIO.succeed(setup)) { c =>
-        putStrLn("CLOSING THINGS") *>
           ZIO.effect {
+            if (log.isDebugEnabled) log.debug("Reclaiming io resources.")
             c._1.close()
-          }
-            .catchAll(_ =>
-              putStrLn("Closing channel encountered an error.") *> URIO
-                .succeed(())
-            ) *> ZIO.effect {
+          }.orElse(putStrLn("Closing channel encountered an error.")) *>
+            ZIO.effect {
           c._2.flush()
           c._2.close()
         }
-          .catchAll(_ =>
-            putStrLn("Flushing and closing a PipedOutputStream encountered an error.") *> UIO
-              .succeed()
-          ) *> ZIO.effect {
+          .orElse(putStrLn("Flushing and closing a PipedOutputStream encountered an error.")) *>
+            ZIO.effect {
           c._3.close()
-        }
-          .catchAll(_ =>
-            putStrLn("Closing a PipedInputStream encountered an error.") *> UIO
-              .succeed()
-          ) *> ZIO.effect {
+        }.orElse(putStrLn("Closing a PipedInputStream encountered an error.")) *>
+            ZIO.effect {
           c._4.flush()
           c._4.close()
-        }
-          .catchAll(_ =>
-            putStrLn("Flushing and Closing a PipedOutputStream encountered an error.") *> UIO
-              .succeed()
-          ) *> ZIO.effect {
+        }.orElse(putStrLn("Flushing and Closing a PipedOutputStream encountered an error.")) *>
+            ZIO.effect {
           c._5.close()
-        }
-          .catchAll(_ =>
-            putStrLn("Closing a PipedInputStream encountered an error.") *> UIO
-              .succeed()
-          )
+        }.orElse(putStrLn("Closing a PipedInputStream encountered an error."))
       } { ct =>
         val c = ct._1
         val ss1 = Stream
@@ -426,14 +415,14 @@ object Zssh {
           .aggregate(Transducer.utf8Decode)
           .aggregate(Transducer.splitLines)
           .mapM { v =>
-            putStr("output1") *> putStrLn(v) *> UIO.succeed(v)
+            /*putStr("output1") *> putStrLn(v)*/IO.effect(if (log.isDebugEnabled) log.debug(s"output1: $v")).ignore *> UIO.succeed(v)
           } // .schedule(Schedule.fixed(100.milliseconds))
         val ss2 = Stream
           .fromInputStream(ct._5)
           .aggregate(Transducer.utf8Decode)
           .aggregate(Transducer.splitLines)
           .mapM { v =>
-            putStr("output2") *> putStrLn(v) *> UIO.succeed(v)
+            /*putStr("output2") *> putStrLn(v)*/ IO.effect(if (log.isDebugEnabled) log.debug(s"output2: $v")).ignore *> UIO.succeed(v)
           }
         ss1.runCollect <*> ss2.runCollect // ss1.merge(ss2).runCollect
       }).mapError {
@@ -444,8 +433,8 @@ object Zssh {
         case a: Any =>
           new IOException(s"Cause: `${a.getClass.getCanonicalName}`: $a")
       }
-      _ <- putStrLn("begin receiving from reactive streams") *> mapToIOE(effectBlocking {
-        println("waiting for event.")
+      _ <- ZIO.effect{if (log.isDebugEnabled) log.debug("begin receiving from reactive streams")}.ignore *> mapToIOE(effectBlocking {
+        if (log.isDebugEnabled) log.debug("Waiting for event.")
         setup._1.waitFor(
           util.EnumSet.of(ClientChannelEvent.CLOSED, ClientChannelEvent.EOF, ClientChannelEvent.EXIT_STATUS),
           0L
@@ -496,9 +485,9 @@ object Zssh {
           new SshdSocketAddress(targetIp, targetPort)
         )
         val address = localFwTracker.getBoundAddress
-        println(s"Local forward is open, ${localFwTracker.isOpen}")
-        println(s"Local bound address: ${address}")
-        println(s"Local address: ${localFwTracker.getBoundAddress}")
+        if (log.isDebugEnabled) log.debug(s"Local forward is open, ${localFwTracker.isOpen}")
+        if (log.isDebugEnabled) log.debug(s"Local bound address: ${address}")
+        if (log.isDebugEnabled) log.debug(s"Local address: ${localFwTracker.getBoundAddress}")
         //        val channel = cs.createDirectTcpipChannel(
         //          new SshdSocketAddress(SshdSocketAddress.LOCALHOST_IPV4, 52323),
         //          new SshdSocketAddress(targetIp, targetPort))
@@ -552,7 +541,7 @@ object Zssh {
         .bracket(
           in =>
             ZIO.effect {
-              println("Releasing InputStream")
+              if (log.isDebugEnabled) log.debug("Releasing InputStream")
               in.close()
             }.ignore,
           in =>

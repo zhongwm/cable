@@ -17,7 +17,7 @@ object Dependencies {
     "dev.zio" %% "zio-test-magnolia" % zioVersion % "test",
     "org.typelevel" %% "cats-core" % catsVersion,
     "org.apache.sshd" % "sshd-netty" % sshdVersion,
-    "org.apache.sshd" % "sshd-cli" % sshdVersion
-    // "net.i2p.crypto" % "eddsa" % "0.3.0"
+    "org.apache.sshd" % "sshd-cli" % sshdVersion,
+    "net.i2p.crypto" % "eddsa" % "0.3.0"
   )
 }

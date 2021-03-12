@@ -32,9 +32,6 @@
 
 package zhongwm.cable.defs
 import zhongwm.cable.parser.Defs._
-import cats._
-import cats.data._
-import cats.implicits._
 import zio.test._
 import zio.console._
 import Assertion._
