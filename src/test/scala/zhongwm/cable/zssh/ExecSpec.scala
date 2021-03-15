@@ -38,8 +38,9 @@ import TypeDef._
 import Zssh._
 import HostConnS._
 import zio.Chunk
+import Tev._
 
-class EagerExecSpec extends AnyWordSpec with Matchers {
+class ExecSpec extends AnyWordSpec with Matchers {
   
   val simpleTask =
     Action("192.168.99.100", 2023, "test", "test",
@@ -100,8 +101,8 @@ class EagerExecSpec extends AnyWordSpec with Matchers {
   "EagerExec" when {
     "execute" should {
       "succeed" in {
-        val result = simpleNestedTask.run()
-        val listResult = flatListTask.run()
+        val result = simpleNestedTask.runI()
+        val listResult = flatListTask.runI()
         println(result.facts)
         println(listResult.facts)
       }

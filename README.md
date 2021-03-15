@@ -15,6 +15,8 @@ Your host behind a bastion machine? no problem.
 You have a series of remote task to deal with? no problem.
 And connections are reused by multiple tasks for same machine.
 
+A dsl to represent composite ssh tasks.
+
 #### Simple ssh task
 
 ```scala
@@ -75,7 +77,7 @@ val listResult = simpleListTasks.run()     // Inferred type: (Int, (Chunk[String
 ```
 
 
-[To get started](src/test/scala/zhongwm/cable/hostcon/EagerExecSpec.scala)
+[To get started](src/test/scala/zhongwm/cable/hostcon/ExecSpec.scala)
  
 ### Resource Safe
 

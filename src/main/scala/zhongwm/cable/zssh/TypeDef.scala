@@ -80,14 +80,8 @@ object TypeDef {
 
   protected[zssh] def deriveSessionLayer(p: Option[SessionLayer], hc: HostConnInfo): SessionLayer = p match {
     case Some(l) =>
-      /*println("===============")
-      println("===bridging====")
-      println("===============")*/
       jumpSessionL(l, hc.ho, hc.port, hc.username, hc.password, hc.privateKey)
     case None =>
-      /*println("===============")
-      println("===directco====")
-      println("===============")*/
       sessionL(hc.ho, hc.port, hc.username, hc.password, hc.privateKey)
   }
 
