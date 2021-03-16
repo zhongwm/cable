@@ -1,7 +1,5 @@
 <div style="text-align: right;">Next: <a href="Composing_tasks_to_run_in_one_host.md">Composing tasks to run in one host</a></div>
 
-A scala library that practically connects the devops world and functional world.
-
 # Constructing ssh tasks
 
 ## Static, by code

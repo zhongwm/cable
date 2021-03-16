@@ -1,3 +1,5 @@
+Previous: [Constructing ssh tasks](constructing.md)
+
 # Composing tasks to run inside a host
 
 To compose tasks to run inside a host, we use [zio](https://zio.dev),
@@ -40,3 +42,5 @@ which are all sequential combine operators.
 
 As for the tasks result requirement of your need, These operators has the same result preservation
 affinity as the aforementioned series.
+
+Previous: [Constructing ssh tasks](constructing.md)
