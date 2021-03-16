@@ -37,9 +37,6 @@ import zhongwm.cable.zssh.Zssh.types._
 import zio.Runtime
 
 object TypeDef {
-  sealed trait TAction[+A]
-
-  case class SshAction[+A](action: SshIO[A]) extends TAction[A]
 
   case class HostConnInfo(ho: String,
                           port: Int,

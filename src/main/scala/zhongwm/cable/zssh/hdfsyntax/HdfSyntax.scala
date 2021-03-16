@@ -34,7 +34,7 @@ package zhongwm.cable.zssh.hdfsyntax
 
 import Hdf._
 import cats.{Id, ~>}
-import zhongwm.cable.zssh.Zssh
+import zhongwm.cable.zssh.{SshAction, Zssh}
 import zhongwm.cable.zssh.Zssh.types._
 import zio._
 
@@ -124,7 +124,7 @@ object HdfSyntax {
   val execWithContext: HCAlg[HostConnC, Exec, Option[SessionLayer]] = new HCAlg[HostConnC, Exec, Option[SessionLayer]] {
     override def apply[A](fa: HostConnC[Exec, Option[SessionLayer], A]): Exec[A] = {
       fa.hc.action match {
-        case ScriptAction(script) =>
+        case SshAction(script) =>
           fa.context.map{ pp => Runtime.default.unsafeRun(script.provideCustomLayer(pp))}.fold(Left("no value"): Either[String, A])(v => Right[String, A](v): Either[String, A])
       }
     }
@@ -133,7 +133,7 @@ object HdfSyntax {
   val inspection: HAlg[HostConn, Inspect] = new HAlg[HostConn, Inspect] {
     override def apply[A](fa: HostConn[Inspect, A]): Inspect[A] = {
       fa.hc.action match {
-        case ScriptAction(script) =>
+        case SshAction(script) =>
           println(script)
       }
     }

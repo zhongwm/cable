@@ -71,7 +71,7 @@ object SshActionDef {
         Some("test"),
         None,
         // ScriptAction(() => "88")
-        ScriptAction(Zssh.scriptIO("hostname") *> Zssh.scriptIO("ls /"))
+        SshAction(Zssh.scriptIO("hostname") *> Zssh.scriptIO("ls /"))
       ),
       List(
         HFix(
@@ -83,7 +83,7 @@ object SshActionDef {
               Some("test"),
               None,
               // ScriptAction(() => "")
-              ScriptAction(Zssh.scpUploadIO("build.sbt") *> Zssh.scpDownloadIO("/etc/issue"))
+              SshAction(Zssh.scpUploadIO("build.sbt") *> Zssh.scpDownloadIO("/etc/issue"))
             ),
             Nil
             /*List(
@@ -117,7 +117,7 @@ object SshActionDef {
         Some("test"),
         None,
         // ScriptAction(() => "88")
-        ScriptAction(Zssh.scriptIO("hostname") *> Zssh.scriptIO("ls /"))
+        SshAction(Zssh.scriptIO("hostname") *> Zssh.scriptIO("ls /"))
       ),
       List(
         HFix(
@@ -129,7 +129,7 @@ object SshActionDef {
               Some("test"),
               None,
               // ScriptAction(() => "")
-              ScriptAction(Zssh.scpUploadIO("build.sbt") *> Zssh.scpDownloadIO("/etc/issue"))
+              SshAction(Zssh.scpUploadIO("build.sbt") *> Zssh.scpDownloadIO("/etc/issue"))
             ),
             List(
               HFix(
@@ -141,7 +141,7 @@ object SshActionDef {
                     Some("test"),
                     None,
                     // ScriptAction(() => "")
-                    ScriptAction(Zssh.scpDownloadIO("/etc/issue"))
+                    SshAction(Zssh.scpDownloadIO("/etc/issue"))
                   ),
                   Nil
                 )

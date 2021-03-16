@@ -34,21 +34,16 @@ package zhongwm.cable.zssh.hdfsyntax
 
 import zhongwm.cable.zssh.Zssh.types._
 import cats.~>
+import zhongwm.cable.zssh.{TAction, SshAction}
 
 object Hdf {
-
-  sealed trait ScaAnsible[+A]
-
-  // ready to be removed
-  // case class ScriptAction[+A](action: () => A) extends ScaAnsible[A]
-  case class ScriptAction[+A](action: SshIO[A]) extends ScaAnsible[A]
 
   case class HostConnInfo[+A](ho: String,
                              port: Int,
                              userName: Option[String] = Some("root"),
                              password: Option[String],
                              privKey: Option[KeyPair],
-                             action: ScaAnsible[A])
+                             action: TAction[A])
   case class HostConn[F[+_], +T](hc: HostConnInfo[T], nextLevel: List[F[_]])
 
   /**
@@ -64,13 +59,8 @@ object Hdf {
   case class HCDFix[F[_[+_, +_], +_, +_], +C, +A](unfix: F[λ[(+[C], +[D]) => HCDFix[F, C, D]], C, A])
 
   def ssh[A](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], action: SshIO[A], children: HFix[HostConn, _]*): HFix[HostConn, A] = {
-    HFix(HostConn(HostConnInfo(host, port, username, password, privateKey, ScriptAction(action)), children.toList))
+    HFix(HostConn(HostConnInfo(host, port, username, password, privateKey, SshAction(action)), children.toList))
   }
-
-  // ready to be remove
-  // def ssh[A](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], action: => A, children: HFix[HostConn, Any]*): HFix[HostConn, A] = {
-  //   HFix(HostConn(HostConnInfo(host, port, username, password, privateKey, ScriptAction(() => action)), children.toList))
-  // }
 
   type HAlg[F[_[+_], +_], G[+_]] = F[G, +*] ~> G
 
