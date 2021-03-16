@@ -1,5 +1,7 @@
 <div style="text-align: right;">Next: <a href="Composing_tasks_to_run_in_one_host.md">Composing tasks to run in one host</a></div>
 
+---
+
 # Constructing ssh tasks
 
 ## Static, by code
@@ -56,5 +58,7 @@ Dynamic creation of tasks, you can generate tasks from config file, like ansible
       )
     )
 ```
+
+---
 
 <div style="text-align: right;">Next: <a href="Composing_tasks_to_run_in_one_host.md">Composing tasks to run in one host</a></div>
