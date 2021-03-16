@@ -17,8 +17,6 @@ And connections are reused by multiple tasks for same machine.
 
 A dsl to represent composite ssh tasks.
 
-#### [wiki](wiki/constructing.md)
-
 #### Simple ssh task
 
 ```scala
@@ -78,14 +76,17 @@ val nestedResult = simpleNestedTasks.run() // Inferred type: NestedC[Unit, (Int,
 val listResult = simpleListTasks.run()     // Inferred type: (Int, (Chunk[String], Chunk[String])) +|: (Int, (Chunk[String], Chunk[String]))
 ```
 
-
-[To get started](src/test/scala/zhongwm/cable/hostcon/ExecSpec.scala)
- 
 ### Resource Safe
 
 As we can see in the previous sample code, we don't need to concern about connections' management, yet it's safely managed. 
 
 Connections are guaranteed to be released correctly
+
+#### Docs
+
+Docs here [wiki](wiki/constructing.md)
+
+[To get started](src/test/scala/zhongwm/cable/hostcon/ExecSpec.scala)
 
 ## Full Support for ZIO programming
 
