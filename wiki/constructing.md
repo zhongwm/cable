@@ -6,7 +6,7 @@
 
 ## Static, by code
 
-Statical definition of tasks, One benefits is that you get type information that reflects your
+With statical definition of tasks, one benefits is that you get type information that reflects your
 task's structure.
 
 
@@ -25,7 +25,7 @@ The inferred type, which can be auto completed by your ide, is `Unit +: (Nested[
 (Chunk[String], Chunk[String])), (Int, (Chunk[String], Chunk[String])))], ((Int, (Chunk[String],
 Chunk[String])), Unit))`
 
-This case brings possibility for later handling of the task's result.
+This paradigm brings possibility for later handling of the task's result.
 
 ## Dynamic, by parser
 
