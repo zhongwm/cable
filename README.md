@@ -144,5 +144,5 @@ Based on mina-sshd-netty
 ## P.S.
 
 This project is greatly inspired by a famous python project [ansible](https://ansible.com), which is
-a popular devops tool. This project strives to join the functional world and the devops world in the
-field of remote host related tasks.
+a very famous project in devops. This project strives to join the functional world and the devops
+world in the field of remote host related tasks.
