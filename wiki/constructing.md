@@ -1,3 +1,5 @@
+<div style="text-align: right;">Next: <a href="Composing_tasks_to_run_in_one_host.md">Composing tasks to run in one host</a></div>
+
 A scala library that practically connects the devops world and functional world.
 
 # Constructing ssh tasks
@@ -57,4 +59,4 @@ Dynamic creation of tasks, you can generate tasks from config file, like ansible
     )
 ```
 
-Next: [Composing tasks to run in one host](Composing_tasks_to_run_in_one_host.md)
+<div style="text-align: right;">Next: <a href="Composing_tasks_to_run_in_one_host.md">Composing tasks to run in one host</a></div>
