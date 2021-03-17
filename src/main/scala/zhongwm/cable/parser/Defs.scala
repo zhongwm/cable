@@ -26,20 +26,16 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- *
- * by Zhongwenming<br>
  */
+
+/** Written by Wenming Zhong */
 
 package zhongwm.cable.parser
 
-import java.io.File
-
 import zio._
-import console._
 import atto._
 import Atto._
 import atto.ParseResult._
-import cats._
 import cats.implicits._
 
 import scala.annotation.{nowarn, tailrec}
@@ -244,13 +240,11 @@ object Defs {
         parse(gs, ls)
       case l :: ls if isAGroupLine(l)._2 =>
         val isGroupVarRet = isGroupVarSec(l)
-        // println(isGroupVarRet) // debug
         if (isGroupVarRet._2) {
           val groupName = isGroupVarRet._1
           var existing = gs.find(_.name === groupName)
           if (existing.isDefined) {
             val parseGroupVarDefsResult = parseGroupVarDefs(ls)
-            // println(parseGroupVarDefsResult)  // debug
             existing = existing.map{e=>e.copy(attrs=e.attrs ++ parseGroupVarDefsResult._2)}
             parse(existing.get :: gs.filterNot{p=>existing.get.name === p.name}, parseGroupVarDefsResult._1)
           } else {
@@ -277,9 +271,7 @@ object Defs {
 
     def parseMerged(ll: List[String]): AGroup = {
       val (groups, rl) = parse(List.empty, ll)
-      // println("=====after parser====")
 
-      // println(groups)
       var subGroups = groups.map{ pg =>
         var ag = AGroup(pg.name, items=Map.empty, attrs=pg.attrs)
         val aHosts = pg.items.map{ph => ph._1 -> AHost(ph._1, ph._2.attrs, ag.some)}
@@ -302,10 +294,6 @@ object Defs {
   def readInventoryFile(filePath: String): Task[AGroup] =
     ZIO.bracket{ZIO.effect{Source.fromFile(filePath)}}{x=>ZIO.effect{x.close()}.ignore} {fs=>
     Task.effect{IniLex.parseMerged(fs.getLines().toList)}
-  }
-
-  def main(args: Array[String]): Unit = {
-    println("ok")
   }
 
 }

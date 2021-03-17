@@ -22,13 +22,13 @@ Likely the `scpDownloadIO("...")` means to download a file from the remote host.
 Thees 3 functions ends with IO have a type, We call it an IO, an effect, actually they are totally
 legal zio effects, whose formal type are some [zio](https://zio.dev)`.ZIO`.
                               
-For those whom are not familiar with zio, ZIO effects compose in several ways. While the `<&>` means
+For those whom are unfamiliar with zio, ZIO effects compose in several ways. While the `<&>` means
 to run in parallel, also in semantic it means to compose the result of this operation and the result
 of the other operand, the composed one. The composition result is also a ZIO, whose result will be
 the tuple product of the two component effect.
 
 The other compositing operator `<&` and `&>`, also joins the other task in parallel, but the discards
-one of the two components, respectively to the direction of the arrow.
+one of the two components, respectively to opposite of the direction of the arrow.
 
 Likely, there is another [series of
 operators](https://zio.dev/docs/overview/overview_basic_operations#zipping), `<*>`, `<*`, `*>`,
@@ -43,7 +43,7 @@ which are all sequential combine operators.
 ```
 
 As for the tasks result requirement of your need, These operators has the same result preservation
-affinity as the aforementioned series.
+property as the aforementioned series.
 
 ---
 
