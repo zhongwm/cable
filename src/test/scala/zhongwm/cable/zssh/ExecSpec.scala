@@ -38,7 +38,7 @@ import TypeDef._
 import Zssh._
 import HostConnS._
 import zio.Chunk
-import Tev._
+import Evaluation._
 
 class ExecSpec extends AnyWordSpec with Matchers {
   

@@ -36,7 +36,7 @@ import TypeDef.HostConnS._
 import zio.Runtime
 
 
-object Tev {
+object Evaluation {
 
   trait HostConnSRun[X <: HostConnS[A], A] {
     def runI(ctx: ZSContext[A] = ZSSingleCtx(None, Map.empty, None, None)): X#Repr
@@ -49,6 +49,10 @@ object Tev {
           val layer = deriveSessionLayer(ctx.parentLayer, x.hc)
           val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer))
           ZSSingleCtx(facts = Some(result), ctx.data, ctx.parentLayer, currentLayer = Some(layer))
+        case FactAction(name, a) =>
+          val layer = deriveSessionLayer(ctx.parentLayer, x.hc)
+          val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer))
+          ZSSingleCtx(facts = Some(result), ctx.data + (name -> result), ctx.parentLayer, Some(layer))
       }
     }
   }

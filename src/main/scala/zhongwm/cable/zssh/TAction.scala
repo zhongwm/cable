@@ -37,3 +37,5 @@ import zhongwm.cable.zssh.Zssh.types.SshIO
 sealed trait TAction[+A]
 
 case class SshAction[+A](action: SshIO[A]) extends TAction[A]
+
+case class FactAction[+A](name: String, action: SshIO[A]) extends TAction[A]

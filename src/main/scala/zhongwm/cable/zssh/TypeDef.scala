@@ -128,6 +128,10 @@ object TypeDef {
             val layer = deriveSessionLayer(ctx.parentLayer, hc)
             val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer))
             ZSSingleCtx(facts = Some(result), ctx.data, ctx.parentLayer, currentLayer = Some(layer))
+          case FactAction(name, a) =>
+            val layer = deriveSessionLayer(ctx.parentLayer, hc)
+            val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer))
+            ZSSingleCtx(facts = Some(result), ctx.data + (name -> result), ctx.parentLayer, Some(layer))
         }
       }
     }
