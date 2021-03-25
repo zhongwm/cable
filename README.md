@@ -31,7 +31,7 @@ A dsl to represent composite ssh tasks.
       "192.168.99.100", 2023, "user", "password",
       scriptIO("hostname") <&>
         scpUploadIO("build.sbt") <&
-        scpDownloadIO("/etc/issue"),
+        scpDownloadIO("/etc/issue")
     )
 
 ```
@@ -86,7 +86,7 @@ Connections are guaranteed to be released correctly
 
 Docs here [wiki](wiki/constructing.md)
 
-[To get started](src/test/scala/zhongwm/cable/hostcon/ExecSpec.scala)
+[To get started](src/test/scala/zhongwm/cable/zssh/ExecSpec.scala)
 
 ## Full Support for ZIO programming
 
