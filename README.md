@@ -88,6 +88,12 @@ Docs here [wiki](wiki/constructing.md)
 
 [To get started](src/test/scala/zhongwm/cable/zssh/ExecSpec.scala)
 
+#### Installation
+
+```scala
+libraryDependencies += "io.github.zhongwm" %% "cable" % "0.1.0"
+```
+
 ## Full Support for ZIO programming
 
 Full support for ZIO composition, ready to be embedded into ZIO project, 

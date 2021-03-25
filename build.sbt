@@ -4,22 +4,23 @@ import Dependencies._
 name := "cable"
 
 // library version
-version := "0.0.1-3"
+ThisBuild / version := "0.1.0"
 
 // groupId, SCM, license information
 organization := "io.github.zhongwm"
 homepage := Some(url("https://github.com/zhongwm/cable"))
+credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credentials")
 scmInfo := Some(ScmInfo(url("https://github.com/zhongwm/cable"), "git@github.com:zhongwm/cable.git"))
 developers := List(Developer("zhongwenming", "Wenming Zhong", "zhongwm@gmail.com", url("https://zhongwm.github.io")))
-//licenses += "Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")
 licenses += "PRIVATE" -> url("https://raw.githubusercontent.com/zhongwm/zhongwm.github.io/master/LICENSE.txt")
 
-publishMavenStyle := true
+ThisBuild / pomIncludeRepository := { _ => false }
+ThisBuild / publishMavenStyle := true
 
 // disable publishing the api docs jar
-Compile / packageDoc / publishArtifact := false
+Compile / packageDoc / publishArtifact := true
 // disable publishing the main sources jar
-Compile / packageSrc / publishArtifact := false
+Compile / packageSrc / publishArtifact := true
 
 // disable publish ith scala version, otherwise artifact name will include scala version
 // e.g cable_2.13
@@ -28,7 +29,7 @@ crossPaths := true
 // add sonatype repository settings
 // snapshot versions publish to sonatype snapshot repository
 // other versions publish to sonatype staging repository
-publishTo := Some(
+ThisBuild / publishTo := Some(
   if (isSnapshot.value)
     Opts.resolver.sonatypeSnapshots
   else
@@ -40,7 +41,7 @@ publishTo := Some(
 // Resolvers, use sftp, comment out if not used.
 val sftpResolver = Resolver.sftp("sftphost", sys.env.getOrElse("sftpmvnhost", "localhost"), "/tmp/repo/")
 resolvers += sftpResolver
-publishTo := Some(sftpResolver)
+// publishTo := Some(sftpResolver)
 ///////////
 
 
