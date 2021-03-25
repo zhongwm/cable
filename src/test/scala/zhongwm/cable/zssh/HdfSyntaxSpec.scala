@@ -46,6 +46,7 @@ class HdfSyntaxSpec extends AnyWordSpec with Matchers {
     "executed" should {
       "be ok" in {
         val value = executeSshIO(script)
+        println(value)
         value.isRight should be(true)
       }
     }
@@ -58,7 +59,7 @@ class HdfSyntaxSpec extends AnyWordSpec with Matchers {
         implicit val layered: HCFix[HostConnC, Option[SessionLayer], _] = toLayered(result)
         // val hcf = implicitly[HCFunctor[HostConnC, Option[SessionLayer]]](layered)
         println(s"layered: $layered")
-        val materialized = hcFold(execWithContext, layered)
+        val materialized = hcFold(execWithContext(ZsshContext.empty), layered)
         println(materialized)
 
         hFold(inspection, script)

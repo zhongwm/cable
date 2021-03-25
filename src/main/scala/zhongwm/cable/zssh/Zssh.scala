@@ -179,7 +179,7 @@ object Zssh {
 
     type KeyPair = java.security.KeyPair
 
-    type SshIO[+A] = ZIO[ZEnv with Has[ClientSession], IOException, A]
+    type SshIO[+A] = ZIO[ZEnv with Has[ClientSession] with Has[ZsshContext], IOException, A]
 
     val ev1 = implicitly[ZIO[Blocking with Has[ClientSession], IOException, Int] <:< SshIO[Int]]
   }

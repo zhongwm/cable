@@ -34,16 +34,25 @@ package zhongwm.cable.zssh.hdfsyntax
 
 import zhongwm.cable.zssh.Zssh.types._
 import cats.~>
-import zhongwm.cable.zssh.{TAction, SshAction}
+import zhongwm.cable.zssh.{TAction, SshAction, ZsshContext}
 
 object Hdf {
 
-  case class HostConnInfo[+A](ho: String,
+  sealed trait HostConnInfo[+A]
+  case class HostAction[+A](ho: String,
                              port: Int,
                              userName: Option[String] = Some("root"),
                              password: Option[String],
                              privKey: Option[KeyPair],
-                             action: TAction[A])
+                             action: TAction[A]) extends HostConnInfo[A]
+
+  case class HostConnInfoNop[+A](ho: String,
+                                 port: Int,
+                                 userName: Option[String] = Some("root"),
+                                 password: Option[String],
+                                 privKey: Option[KeyPair]
+                                ) extends HostConnInfo[Nothing]
+
   case class HostConn[F[+_], +T](hc: HostConnInfo[T], nextLevel: List[F[_]])
 
   /**
@@ -58,8 +67,13 @@ object Hdf {
   case class HCFix[F[_[+_], +_, +_], C, +A](unfix: F[HCFix[F, C, +*], C, A])
   case class HCDFix[F[_[+_, +_], +_, +_], +C, +A](unfix: F[λ[(+[C], +[D]) => HCDFix[F, C, D]], C, A])
 
-  def ssh[A](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], action: SshIO[A], children: HFix[HostConn, _]*): HFix[HostConn, A] = {
-    HFix(HostConn(HostConnInfo(host, port, username, password, privateKey, SshAction(action)), children.toList))
+  def ssh[A](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], action: Option[TAction[A]], children: HFix[HostConn, _]*): HFix[HostConn, A] = {
+    action match {
+      case None =>
+        HFix(HostConn(HostConnInfoNop(host, port, username, password, privateKey), children.toList))
+      case Some(taction) =>
+        HFix(HostConn(HostAction(host, port, username, password, privateKey, taction), children.toList))
+    }
   }
 
   type HAlg[F[_[+_], +_], G[+_]] = F[G, +*] ~> G
@@ -74,7 +88,7 @@ object Hdf {
 
   type HCAlg[F[_[+_], +_, +_], G[+_], C] = F[G, C, +*] ~> G
 
-  type Exec[+A] = Either[Any, A]
+  type Exec[+A] = Either[Any, (ZsshContext, Option[A])]
 
   type Inspect[+A] = Unit
 

@@ -126,11 +126,11 @@ object TypeDef {
         action match {
           case SshAction(a) =>
             val layer = deriveSessionLayer(ctx.parentLayer, hc)
-            val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer))
+            val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer ++ ZsshContext.lFromMapData(ctx.data)))
             ZSSingleCtx(facts = Some(result), ctx.data, ctx.parentLayer, currentLayer = Some(layer))
           case FactAction(name, a) =>
             val layer = deriveSessionLayer(ctx.parentLayer, hc)
-            val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer))
+            val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer ++ ZsshContext.lFromMapData(ctx.data)))
             ZSSingleCtx(facts = Some(result), ctx.data + (name -> result), ctx.parentLayer, Some(layer))
         }
       }

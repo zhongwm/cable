@@ -43,14 +43,14 @@ object SshActionDef {
       Some("test"),
       Some("test"),
       None,
-      Zssh.scriptIO("hostname") *> Zssh.scriptIO("ls /"),
+      None, /* SshAction(Zssh.scriptIO("hostname") *> Zssh.scriptIO("ls /")), */
       ssh(
         "192.168.99.100",
         2023,
         Some("test"),
         Some("test"),
         None,
-        Zssh.scpUploadIO("build.sbt") *> Zssh.scpDownloadIO("/etc/issue")
+        Some(FactAction("Get a file and systemrel", Zssh.scpUploadIO("build.sbt") *> Zssh.scpDownloadIO("/etc/issue") *> Zssh.scriptIO("uname -r")))
         /*ssh(
           "192.168.99.100",
           2023,
@@ -64,19 +64,19 @@ object SshActionDef {
 
   val scriptManualDef = HFix[HostConn, Any](
     HostConn(
-      HostConnInfo(
+      HostConnInfoNop(
         "192.168.99.100",
         2022,
         Some("test"),
         Some("test"),
         None,
         // ScriptAction(() => "88")
-        SshAction(Zssh.scriptIO("hostname") *> Zssh.scriptIO("ls /"))
+        // SshAction(Zssh.scriptIO("hostname") *> Zssh.scriptIO("ls /"))
       ),
       List(
         HFix(
           HostConn(
-            HostConnInfo(
+            HostAction(
               "192.168.99.100",
               2023,
               Some("test"),
@@ -110,7 +110,7 @@ object SshActionDef {
 
   val scriptManualDef3Tier = HFix[HostConn, Any](
     HostConn(
-      HostConnInfo(
+      HostAction(
         "192.168.99.100",
         2022,
         Some("test"),
@@ -122,7 +122,7 @@ object SshActionDef {
       List(
         HFix(
           HostConn(
-            HostConnInfo(
+            HostAction(
               "192.168.99.100",
               2023,
               Some("test"),
@@ -134,7 +134,7 @@ object SshActionDef {
             List(
               HFix(
                 HostConn(
-                  HostConnInfo(
+                  HostAction(
                     "192.168.99.100",
                     2023,
                     Some("test"),
