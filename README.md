@@ -9,6 +9,12 @@ It's scala, It's purely functional, monadic.
 At the same time, it's functionality rich, task centric, succinct, handy.
 It supports ssh proxying, jumping over networks, tasks chaining.  
 
+#### Installation
+
+```scala
+libraryDependencies += "io.github.zhongwm" %% "cable" % "0.1.0"
+```
+
 ### Supports ssh proxying, in a monadic way!
 
 Your host behind a bastion machine? no problem.
@@ -87,12 +93,6 @@ Connections are guaranteed to be released correctly
 Docs here [wiki](wiki/constructing.md)
 
 [To get started](src/test/scala/zhongwm/cable/zssh/ExecSpec.scala)
-
-#### Installation
-
-```scala
-libraryDependencies += "io.github.zhongwm" %% "cable" % "0.1.0"
-```
 
 ## Full Support for ZIO programming
 
