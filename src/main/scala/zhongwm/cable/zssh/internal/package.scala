@@ -32,21 +32,4 @@
 
 package zhongwm.cable.zssh
 
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import zhongwm.cable.zssh.hdfsyntax.HdfSyntax._
-
-class HdfSyntaxSpec extends AnyWordSpec with Matchers {
-
-  import SshActionDef._
-  
-  "Script" when {
-    "executed" should {
-      "be ok" in {
-        val value = executeSshIO(script)
-        pprint.pprintln(value)
-        value should not be null
-      }
-    }
-  }
-}
+package object internal extends ZsshContextInternal {}

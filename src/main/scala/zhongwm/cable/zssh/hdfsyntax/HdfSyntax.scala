@@ -36,7 +36,11 @@ import Hdf._
 import cats.{Id, ~>}
 import zhongwm.cable.zssh.{FactAction, SshAction, Zssh, ZsshContext}
 import zhongwm.cable.zssh.Zssh.types._
+import zhongwm.cable.zssh.internal.ZsshContextInternal
+import zhongwm.cable.zssh.internal._
 import zio._
+
+import java.io.IOException
 
 /**
  * Two Execution models
@@ -121,43 +125,55 @@ object HdfSyntax {
     HCFix(ctor(parentCtx, getA(hc), hostConn2HostConnCInner(getList(hc), asParentOfChildren)))
   }
 
-  def execWithContext(initCtx: ZsshContext = ZsshContext.empty): HCAlg[HostConnC, Exec, Option[SessionLayer]] = new HCAlg[HostConnC, Exec, Option[SessionLayer]] {
+  def execWithContext(initCtx: ZsshContext = ZsshContextInternal.empty): HCAlg[HostConnC, Exec, SessionLayer] = new HCAlg[HostConnC, Exec, SessionLayer] {
     var zsshContext: ZsshContext = initCtx
 
-    override def apply[A](fa: HostConnC[Exec, Option[SessionLayer], A]): Exec[A] = {
+    override def apply[A](fa: HostConnC[Exec, SessionLayer, A]): Exec[A] = {
       fa.hc match {
         case HostAction(_, _, _, _, _, action) =>
           action match {
             case SshAction(sshio) =>
-              fa.context.map{ pp => Runtime.default.unsafeRun(sshio.provideCustomLayer(pp ++ ZsshContext.zsshContextL(zsshContext)))}.fold(Left("no value"): Either[String, (ZsshContext, Option[A])])(v => Right[String, (ZsshContext, Option[A])]((zsshContext, Some(v))))
+              Runtime.default.unsafeRun(sshio.flatMap {
+                case result: SshScriptIOResult if result._1 != 0 => ZIO.fail(new IOException(s"Command failed with non-zero exit code.\n${result._2._2.mkString}"))
+                case ar => ZIO.succeed(ar)
+              }.map(a => (zsshContext, Some(a))).provideCustomLayer(fa.context ++ zsshContext.zsshContextL))
             case FactAction(name, sshio) =>
-              fa.context.map{ pp => Runtime.default.unsafeRun(sshio.tap(a => ZIO.effect{zsshContext = zsshContext.appended(name -> a)})
-                .map(a=>(zsshContext, Some(a))).provideCustomLayer(pp ++ ZsshContext.zsshContextL(zsshContext)))}
-                .fold(Left("no value"): Either[String, (ZsshContext, Option[A])])(v => Right[String, (ZsshContext, Option[A])](v): Either[String, (ZsshContext, Option[A])])
+              Runtime.default.unsafeRun(sshio.flatMap {
+                case result: SshScriptIOResult if result._1 != 0 => ZIO.fail(new IOException(s"Command failed with non-zero exit code.\n${result._2._2.mkString}"))
+                case ar => ZIO.succeed(ar)
+              }.tap(a => ZIO.effect{zsshContext = zsshContext.updated(name -> a)})
+                .map(a => (zsshContext, Some(a))).provideCustomLayer(fa.context ++ zsshContext.zsshContextL))
           }
         case HostConnInfoNop(_, _, _, _, _) =>
-          Right((zsshContext, None)): Right[String, (ZsshContext, Option[A])]
+          (zsshContext, None)
       }
     }
   }
 
   val inspection: HAlg[HostConn, Inspect] = new HAlg[HostConn, Inspect] {
     override def apply[A](fa: HostConn[Inspect, A]): Inspect[A] = {
-      fa.hc match {
+      val current = fa.hc match {
         case HostAction(ho, port, _, _, _, action) =>
           action match {
-            case SshAction(script) =>
-              println(s"$script in $ho:$port")
-            case FactAction(name, script) =>
-              println(s"named action $name, $script in $ho:$port")
+            case SshAction(_) =>
+              val rv = s"script in $ho:$port"
+              println(rv)
+              rv
+            case FactAction(name, _) =>
+              val rv = s"Named action $name in $ho:$port"
+              println(rv)
+              rv
           }
         case HostConnInfoNop(ho, port, _, _, _) =>
-          println(s"just connect $ho:$port")
+          val rv = s"Just connect $ho:$port"
+          println(rv)
+          rv
       }
+      current ++ ":>" ++ fa.nextLevel.mkString(", ")
     }
   }
 
-  def toLayered[A](a: HCFix[HostConnC, Option[HostConnInfo[_]], A]): HCFix[HostConnC, Option[SessionLayer], A] = {
+  def toLayered[A](a: HCFix[HostConnC, Option[HostConnInfo[_]], A]): HCFix[HostConnC, SessionLayer, A] = {
     val unfix = a.unfix
     def derive[T, U](parent: Option[HostConnInfo[T]], current: HostConnInfo[U]): SessionLayer = parent match {
       case None =>
@@ -175,14 +191,14 @@ object HdfSyntax {
             Zssh.jumpSessionL(derive(None, p), ho, port, userName, password, privKey)
         }
     }
-    HCFix(HostConnC(Some(derive(unfix.context, unfix.hc)), unfix.hc, unfix.nextLevel.foldLeft(List.empty[HCFix[HostConnC, Option[SessionLayer], _]]){ (acc, i) => toLayered(i) :: acc}))
+    HCFix(HostConnC(derive(unfix.context, unfix.hc), unfix.hc, unfix.nextLevel.foldLeft(List.empty[HCFix[HostConnC, SessionLayer, _]]){ (acc, i) => toLayered(i) :: acc}))
   }
 
   def executeSshIO[A](sshIO: HFix[HostConn, A]): Exec[A] = {
     val initCtx: Option[HostConnInfo[_]] = None
     val value: HCFix[HostConnC, Option[HostConnInfo[_]], A] = hostConn2HostConnC(sshIO, initCtx, Some(_))
     implicit val layered = toLayered(value)
-    hcFold(execWithContext(ZsshContext.empty), layered)
+    hcFold(execWithContext(ZsshContextInternal.empty), layered)
   }
 
 }

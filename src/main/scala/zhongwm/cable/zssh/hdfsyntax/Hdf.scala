@@ -88,8 +88,8 @@ object Hdf {
 
   type HCAlg[F[_[+_], +_, +_], G[+_], C] = F[G, C, +*] ~> G
 
-  type Exec[+A] = Either[Any, (ZsshContext, Option[A])]
+  type Exec[+A] = (ZsshContext, Option[A])
 
-  type Inspect[+A] = Unit
+  type Inspect[+A] = String
 
 }

@@ -33,6 +33,8 @@
 package zhongwm.cable.zssh
 
 import zhongwm.cable.zssh.hdfsyntax.Hdf._
+import zio._
+import Zssh.types._
 
 object SshActionDef {
 
@@ -43,14 +45,14 @@ object SshActionDef {
       Some("test"),
       Some("test"),
       None,
-      None, /* SshAction(Zssh.scriptIO("hostname") *> Zssh.scriptIO("ls /")), */
+      Some(FactAction("Get a file and systemrel", ZIO.access[Has[ZsshContext]](_.get.data("hostNameOfA").asInstanceOf[SshScriptIOResult]._2._1) >>= {s => Zssh.scriptIO(s"echo Displaying fact value: ${s.mkString}")})),  // Could be set to None to opt out doing anything.
       ssh(
         "192.168.99.100",
         2023,
         Some("test"),
         Some("test"),
         None,
-        Some(FactAction("Get a file and systemrel", Zssh.scpUploadIO("build.sbt") *> Zssh.scpDownloadIO("/etc/issue") *> Zssh.scriptIO("uname -r")))
+        Some(FactAction("hostNameOfA", Zssh.scpDownloadIO("/etc/issue") *> Zssh.scriptIO("uname -r") *> Zssh.scriptIO("hostname")))
         /*ssh(
           "192.168.99.100",
           2023,

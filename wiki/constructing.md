@@ -39,14 +39,14 @@ Dynamic creation of tasks, you can generate tasks from config file, like ansible
       Some("test"),
       Some("test"),
       None,
-      scriptIO("hostname") *> scriptIO("ls /"),
+      Some(FactAction("some-fact", scriptIO("hostname") *> scriptIO("ls /"))),  /* or None */  // When we don't want to execute anything on the jumper, just specify None.
       ssh(  // Here, the last parameter(of the topmost function), is a variable length Seq
         "192.168.99.100",
         2023,
         Some("test"),
         Some("test"),
         None,
-        scpUploadIO("build.sbt") *> scpDownloadIO("/etc/issue")
+        Some(SshAction(scpUploadIO("build.sbt") *> scpDownloadIO("/etc/issue"))), // Carry out some task here.
         ssh(
           "192.168.99.100",
           2023,

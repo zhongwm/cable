@@ -34,6 +34,7 @@ package zhongwm.cable.zssh
 
 import zhongwm.cable.zssh.Zssh.{jumpSessionL, sessionL}
 import zhongwm.cable.zssh.Zssh.types._
+import zhongwm.cable.zssh.internal.ZsshContextInternal
 import zio.Runtime
 
 object TypeDef {
@@ -126,11 +127,11 @@ object TypeDef {
         action match {
           case SshAction(a) =>
             val layer = deriveSessionLayer(ctx.parentLayer, hc)
-            val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer ++ ZsshContext.lFromMapData(ctx.data)))
+            val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer ++ ZsshContextInternal.lFromData(ctx.data)))
             ZSSingleCtx(facts = Some(result), ctx.data, ctx.parentLayer, currentLayer = Some(layer))
           case FactAction(name, a) =>
             val layer = deriveSessionLayer(ctx.parentLayer, hc)
-            val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer ++ ZsshContext.lFromMapData(ctx.data)))
+            val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer ++ ZsshContextInternal.lFromData(ctx.data)))
             ZSSingleCtx(facts = Some(result), ctx.data + (name -> result), ctx.parentLayer, Some(layer))
         }
       }

@@ -33,6 +33,7 @@
 package zhongwm.cable.zssh
 import TypeDef._
 import TypeDef.HostConnS._
+import zhongwm.cable.zssh.internal.ZsshContextInternal
 import zio.Runtime
 
 
@@ -47,11 +48,11 @@ object Evaluation {
       x.action match {
         case SshAction(a) =>
           val layer = deriveSessionLayer(ctx.parentLayer, x.hc)
-          val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer ++ ZsshContext.lFromMapData(ctx.data)))
+          val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer ++ ZsshContextInternal.lFromData(ctx.data)))
           ZSSingleCtx(facts = Some(result), ctx.data, ctx.parentLayer, currentLayer = Some(layer))
         case FactAction(name, a) =>
           val layer = deriveSessionLayer(ctx.parentLayer, x.hc)
-          val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer ++ ZsshContext.lFromMapData(ctx.data)))
+          val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer ++ ZsshContextInternal.lFromData(ctx.data)))
           ZSSingleCtx(facts = Some(result), ctx.data + (name -> result), ctx.parentLayer, Some(layer))
       }
     }

@@ -181,7 +181,15 @@ object Zssh {
 
     type SshIO[+A] = ZIO[ZEnv with Has[ClientSession] with Has[ZsshContext], IOException, A]
 
+    type SshScriptIOResult = (Int, (Chunk[String], Chunk[String]))
+
     val ev1 = implicitly[ZIO[Blocking with Has[ClientSession], IOException, Int] <:< SshIO[Int]]
+
+    implicit class SshScriptIOResultT(r: SshScriptIOResult) {
+      val exitCode: Int = r._1
+      val stdout: Chunk[String] = r._2._1
+      val stderr: Chunk[String] = r._2._2
+    }
   }
 
   implicit val clientLayer: ZLayer[Blocking, Nothing, Has[SshClient]] =

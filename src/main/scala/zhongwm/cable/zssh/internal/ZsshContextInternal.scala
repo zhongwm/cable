@@ -30,23 +30,19 @@
 
 /* Written by Wenming Zhong */
 
-package zhongwm.cable.zssh
+package zhongwm.cable.zssh.internal
 
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import zhongwm.cable.zssh.hdfsyntax.HdfSyntax._
+import zhongwm.cable.zssh.ZsshContext
+import zio.{Has, ULayer, ZLayer}
 
-class HdfSyntaxSpec extends AnyWordSpec with Matchers {
-
-  import SshActionDef._
-  
-  "Script" when {
-    "executed" should {
-      "be ok" in {
-        val value = executeSshIO(script)
-        pprint.pprintln(value)
-        value should not be null
-      }
-    }
+trait ZsshContextInternal {
+  implicit class ZsshContextOps(zc: ZsshContext) {
+    def updated(t: (String, _)): ZsshContext = ZsshContext(zc.data + t)
+    def zsshContextL: ULayer[Has[ZsshContext]] = ZLayer.succeed(zc)
   }
+}
+
+private[zssh] object ZsshContextInternal {
+  def empty = ZsshContext(Map.empty)
+  def lFromData(data: Map[String, _]): ULayer[Has[ZsshContext]] = ZLayer.succeed(ZsshContext(data))
 }

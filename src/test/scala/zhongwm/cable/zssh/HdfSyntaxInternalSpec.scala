@@ -34,18 +34,24 @@ package zhongwm.cable.zssh
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import zhongwm.cable.zssh.SshActionDef.script
+import zhongwm.cable.zssh.Zssh.types.SessionLayer
+import zhongwm.cable.zssh.hdfsyntax.Hdf._
 import zhongwm.cable.zssh.hdfsyntax.HdfSyntax._
 
-class HdfSyntaxSpec extends AnyWordSpec with Matchers {
-
-  import SshActionDef._
-  
+class HdfSyntaxInternalSpec extends AnyWordSpec with Matchers {
   "Script" when {
-    "executed" should {
-      "be ok" in {
-        val value = executeSshIO(script)
-        pprint.pprintln(value)
-        value should not be null
+    "inspecting" should {
+      "show inspection result" in {
+        print(hFold(inspection, script))
+      }
+
+    }
+    "convert to " should {
+      "succeed " in {
+        val initCtx: Option[HostConnInfo[_]] = None
+        val result = hostConn2HostConnC(script, initCtx, Some(_))
+        pprint.pprintln(result)
       }
     }
   }

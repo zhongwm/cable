@@ -45,7 +45,7 @@ class SshActionDefSpec extends AnyWordSpec with Matchers {
     "executed" should {
       "be ok" in {
         val value = HdfSyntax.executeSshIO(scriptManualDef)
-        value.isRight shouldBe true
+        value should not be null
       }
     }
   }
