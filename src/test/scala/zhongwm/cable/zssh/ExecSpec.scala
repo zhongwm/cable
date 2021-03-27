@@ -50,19 +50,19 @@ class ExecSpec extends AnyWordSpec with Matchers {
     )
 
   val flatListTask =
-    Action("192.168.99.100", 2022, "test", "test", scriptIO("sleep 5; hostname")) +:
-    Action("192.168.99.100", 2023, "test", "test", scriptIO("hostname") &> scpDownloadIO("/etc/issue"))
+    Action("192.168.99.100", 2022, "test", "test", "hostNameA", scriptIO("sleep 5; hostname")) +:
+    Action("192.168.99.100", 2023, "test", "test", sshIoFromFactsM(m => scriptIO(s"echo The last fact we got is ${m("hostNameA")}")) <& scpDownloadIO("/etc/issue"))
 
   val simpleNestedTask = Parental(
     JustConnect("192.168.99.100", 2022, "test", "test"),
     Action("192.168.99.100", 2023, "test", "test", scriptIO("hostname"))
   )
   val compoundSample =
-    JustConnect("192.168.99.100", 2022, "test", "test") +:
+    Action("192.168.99.100", 2022, "test", "test", "TheHostNameOfA", scriptIO("hostname")) +:
       Parental(
-        JustConnect("192.168.99.100", 2022, "test", "test"),
+        JustConnect("192.168.99.100", 2023, "test", "test"),
         Action("192.168.99.100", 2022, "test", "test", scriptIO("hostname")) +:
-          Action("192.168.99.100", 2022, "test", "test", scriptIO("hostname"))
+          Action("192.168.99.100", 2023, "test", "test", sshIoFromFactsM(d => scriptIO(s"echo The last fact we got is ${d("TheHostNameOfA")}")) <*> scriptIO("echo Current host is $(hostname)"))
       ) +:
       Action("192.168.99.100", 2023, "test", "test", scriptIO("hostname")) +:
       HCNil
@@ -75,7 +75,7 @@ class ExecSpec extends AnyWordSpec with Matchers {
       Some("test"),
       Some("test"),
       None,
-      Zssh.scriptIO("hostname") *> Zssh.scriptIO("ls /"),
+      Zssh.scriptIO("hostname") *> Zssh.scriptIO("echo /etc/issue"),
       ssh(
         "192.168.99.100",
         2023,
@@ -103,9 +103,22 @@ class ExecSpec extends AnyWordSpec with Matchers {
         val listResult = zio.Runtime.default.unsafeRun(ZIO.effect{flatListTask.run()}.either)
         println(result.result)
         println(listResult.isRight)
-        listResult.map{r => println(r.a.result.map(_.stdout))}
+        listResult.map{r => println(s"${r.a.result}, ${r.b.result}")}
+        listResult.map{r => println(r.a.result.map(_.stdout.mkString))}
         listResult.map{r =>
           r.b.result.map(_.succeeded) shouldBe Some(true)
+        }
+      }
+    }
+
+    "execute compoundSample" should {
+      "succeed" in {
+        val value1 = compoundSample.run()
+        val v_b = value1.b
+        v_b.result.foreach{v =>
+          val vv = v._1
+          println(vv.child._1)
+          println(vv.child._2)
         }
       }
     }

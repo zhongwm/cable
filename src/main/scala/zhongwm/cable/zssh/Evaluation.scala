@@ -70,7 +70,7 @@ object Evaluation {
   implicit def consHostConnSRun[A, B](x: +:[A, B]): HostConnSRun[A +: B, (A, B)] = new HostConnSRun[A +: B, (A, B)] {
     override def runI(ctx: ZSContext[(A, B)]): A +|: B = {
       val hCtx = x.t.run(ZSSingleCtx(None, ctx.data, ctx.parentLayer, ctx.currentLayer))
-      val tCtx = x.next.run(ZSSingleCtx(None, ctx.data, ctx.parentLayer, ctx.currentLayer))
+      val tCtx = x.next.run(ZSSingleCtx(None, hCtx.data, ctx.parentLayer, ctx.currentLayer))
       +|:(hCtx, tCtx)
     }
   }

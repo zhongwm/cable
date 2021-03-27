@@ -145,34 +145,7 @@ object Zssh {
   val log = LoggerFactory.getLogger(s"${classOf[Zssh].getPackage.getName}.Zssh")
 
   object types {
-    /**
-     * `Nothing with Has[ClientSession]`, not `Any with Has[ClientSession]`
-     *
-     * And mixing a Nothing is required.
-     *
-     * {{{
-     *   implicitly[ZIO[Blocking with Has[ClientSession], IOException, String] <:< HostConnInfoMat[String]]
-     *   implicitly[ZIO[Has[ClientSession], IOException, String] <:< ZIO[Nothing with Has[ClientSession], IOException, String]]
-     *
-     *   implicitly[String with Any <:< String]
-     *   implicitly[String <:< String with Any]
-     *   implicitly[String =:= String with Any]
-     *   // implicitly[String =:= String with Nothing]// can't prove that
-     *
-     *   implicitly[Function[String, Any with Int] <:< Function[String, Int]]
-     *   implicitly[Function[String, Any with Int] =:= Function[String, Int]]
-     *
-     *   implicitly[Function[String, Int] <:< Function[Nothing with String, Int]]
-     *   // implicitly[Function[String, Int] =:= Function[Nothing with String, Int]] // can't prove that
-     *
-     *   case class AAA(v: HostConnInfoMat[String])
-     *   def aaa(p: ZIO[Int with Has[ClientSession], IOException, String]) = {
-     *     val hcim: HostConnInfoMat[String] = p
-     *   }
-     * }}}
-     *
-     * @tparam A
-     */
+
     type HostConnInfoMat[+A] = ZIO[Blocking with ZConsole with Has[ClientSession], IOException, A]
 
     type SessionLayer = ZLayer[Blocking, IOException, Has[ClientSession]]
@@ -378,7 +351,7 @@ object Zssh {
       r  <- script(cmd)(cs.get)
     } yield r
 
-  def sshIoFromFacts[A](buildIO: Map[String, _] => SshIO[A]): SshIO[A] =
+  def sshIoFromFactsM[A](buildIO: Map[String, _] => SshIO[A]): SshIO[A] =
     ZIO.access[Has[ZsshContext]](_.get) >>= {facts => buildIO(facts.data)}
 
   def script(cmd: String)(cs: ClientSession) =

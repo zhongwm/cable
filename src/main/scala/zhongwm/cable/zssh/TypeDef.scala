@@ -46,7 +46,7 @@ object TypeDef {
                           privateKey: Option[KeyPair] = None,
                          )
 
-  case class Nested[+Parent, +Child](a: Parent, b: Child)
+  case class Nested[+Parent, +Child](parent: Parent, child: Child)
 
   sealed abstract class ZSContext[A](val result: Option[A], val data: Map[String, _], val parentLayer: Option[SessionLayer], val currentLayer: Option[SessionLayer])
 
@@ -101,7 +101,7 @@ object TypeDef {
 
       override def run(ctx: ZSContext[(A, B)]): +|:[A, B] = {
         val hCtx = t.run(ZSSingleCtx(None, ctx.data, ctx.parentLayer, ctx.currentLayer))
-        val tCtx = next.run(ZSSingleCtx(None, ctx.data, ctx.parentLayer, ctx.currentLayer))
+        val tCtx = next.run(ZSSingleCtx(None, hCtx.data, ctx.parentLayer, ctx.currentLayer))
         +|:(hCtx, tCtx)
       }
     }
@@ -139,7 +139,9 @@ object TypeDef {
 
     object Action {
       def apply[A](ho: String, port: Int, username: String, password: String, a: SshIO[A]): Action[A] = Action(HostConnInfo(ho, port, Some(username), Some(password), None), SshAction(a))
+      def apply[A](ho: String, port: Int, username: String, password: String, factName: String, a: SshIO[A]): Action[A] = Action(HostConnInfo(ho, port, Some(username), Some(password), None), FactAction(factName, a))
       def apply[A](ho: String, port: Int, username: String, privateKey: Option[KeyPair], a: SshIO[A]): Action[A] = Action(HostConnInfo(ho, port, Some(username), None, privateKey), SshAction(a))
+      def apply[A](ho: String, port: Int, username: String, privateKey: Option[KeyPair], factName: String, a: SshIO[A]): Action[A] = Action(HostConnInfo(ho, port, Some(username), None, privateKey), FactAction(factName, a))
     }
 
     sealed trait HCNil extends HostConnS[Unit] {
@@ -157,6 +159,10 @@ object TypeDef {
 
     def ssh[A, S <: HostConnS[A], B](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], action: SshIO[A], children: HostConnS[B]) = {
       Parental(Action(HostConnInfo(host, port, username, password, privateKey), SshAction(action)), children)
+    }
+
+    def ssh[A, S <: HostConnS[A], B](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], factName: String, action: SshIO[A], children: HostConnS[B]) = {
+      Parental(Action(HostConnInfo(host, port, username, password, privateKey), FactAction(factName, action)), children)
     }
 
     def ssh[A, S <: HostConnS[A], B](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], children: HostConnS[B]) = {

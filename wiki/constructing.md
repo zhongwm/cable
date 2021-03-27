@@ -11,14 +11,15 @@ task's structure.
 
 
 ```scala
-  val compoundTasks =
-    JustConnect("192.168.99.100", 2022, "user", "password") +:
+  val compoundTask =
+  Action("192.168.99.100", 2022, "test", "test", "TheHostNameOfA", scriptIO("hostname")) +:
     Parental(
-      JustConnect("192.168.99.100", 2022, "user", "password" ),
-        Action("192.168.99.100", 2022, "user", "password", scriptIO("hostname")) +:
-        Action("192.168.99.100", 2022, "user", "password", scpUploadIO("build.sbt"))
+      JustConnect("192.168.99.100", 2023, "test", "test"),
+      Action("192.168.99.100", 2022, "test", "test", scriptIO("hostname")) +:
+        Action("192.168.99.100", 2023, "test", "test", sshIoFromFactsM(d => scriptIO(s"echo The last fact we got is ${d("TheHostNameOfA")}")) <*> scriptIO("echo Current host is $(hostname)"))
     ) +:
-    Action("192.168.99.100", 2023, "user", "password", scpDownloadIO("/etc/issue"))
+    Action("192.168.99.100", 2023, "test", "test", scriptIO("hostname")) +:
+    HCNil
 ```
 
 The inferred type, which can be auto completed by your ide, is `Unit +: (Nested[Unit, ((Int,
@@ -46,7 +47,7 @@ Dynamic creation of tasks, you can generate tasks from config file, like ansible
       Some("test"),
       Some("test"),
       None,
-      Some(FactAction("just echoing last fact", Zssh.sshIoFromFacts(m=>Zssh.scriptIO(s"echo Displaying fact value: ${m("hostNameOfA").asInstanceOf[SshScriptIOResult].stdout.mkString}")))),  // Could be set to None to opt out doing anything.
+      Some(FactAction("just echoing last fact", Zssh.sshIoFromFacts(d=>Zssh.scriptIO(s"echo Displaying fact value: ${d("hostNameOfA")}")))),  // Could be set to None to opt out doing anything.
     ),
     ssh(
       "192.168.99.100",
@@ -54,7 +55,7 @@ Dynamic creation of tasks, you can generate tasks from config file, like ansible
       Some("test"),
       Some("test"),
       None,
-      Some(FactAction("Chained at same level", Zssh.sshIoFromFacts(m=>Zssh.scriptIO(s"echo What we got: ${m("just echoing last fact").asInstanceOf[SshScriptIOResult].stdout.mkString}")))),  // Could be set to None to opt out doing anything.
+      Some(FactAction("Chained at same level", Zssh.sshIoFromFacts(d=>Zssh.scriptIO(s"echo What we got: ${m("just echoing last fact")}")))),  // Could be set to None to opt out doing anything.
     ),
   )
 ```

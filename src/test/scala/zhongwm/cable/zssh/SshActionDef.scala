@@ -78,7 +78,7 @@ object SshActionDef {
         Some("test"),
         Some("test"),
         None,
-        Some(FactAction("just echoing last fact", Zssh.sshIoFromFacts(m=>Zssh.scriptIO(s"echo Displaying fact value: ${m("hostNameOfA").asInstanceOf[SshScriptIOResult].stdout.mkString}")))),  // Could be set to None to opt out doing anything.
+        Some(FactAction("just echoing last fact", Zssh.sshIoFromFactsM(d=>Zssh.scriptIO(s"echo Displaying fact value: ${d("hostNameOfA")}")))),  // Could be set to None to opt out doing anything.
         /*ssh(
           "192.168.99.100",
           2023,
@@ -94,7 +94,7 @@ object SshActionDef {
         Some("test"),
         Some("test"),
         None,
-        Some(FactAction("Chained at same level", Zssh.sshIoFromFacts(m=>Zssh.scriptIO(s"echo What we got: ${m("just echoing last fact").asInstanceOf[SshScriptIOResult].stdout.mkString}")))),  // Could be set to None to opt out doing anything.
+        Some(FactAction("Chained at same level", Zssh.sshIoFromFactsM(d=>Zssh.scriptIO(s"echo What we got: ${d("just echoing last fact")}")))),  // Could be set to None to opt out doing anything.
         /*ssh(
           "192.168.99.100",
           2023,
