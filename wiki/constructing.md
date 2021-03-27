@@ -32,31 +32,31 @@ This paradigm brings possibility for later handling of the task's result.
 Dynamic creation of tasks, you can generate tasks from config file, like ansible book
 
 ```scala
-  val script =
+  val script2 =
+  ssh(
+    "192.168.99.100",
+    2022,
+    Some("test"),
+    Some("test"),
+    None,
+    Some(FactAction("hostNameOfA", Zssh.scpDownloadIO("/etc/issue") *> Zssh.scriptIO("hostname"))),   // Could be set to None to opt out doing anything.
     ssh(
       "192.168.99.100",
-      2022,
+      2023,
       Some("test"),
       Some("test"),
       None,
-      Some(FactAction("some-fact", scriptIO("hostname") *> scriptIO("ls /"))),  /* or None */  // When we don't want to execute anything on the jumper, just specify None.
-      ssh(  // Here, the last parameter(of the topmost function), is a variable length Seq
-        "192.168.99.100",
-        2023,
-        Some("test"),
-        Some("test"),
-        None,
-        Some(SshAction(scpUploadIO("build.sbt") *> scpDownloadIO("/etc/issue"))), // Carry out some task here.
-        ssh(
-          "192.168.99.100",
-          2023,
-          Some("test"),
-          Some("test"),
-          None,
-          3
-        )
-      )
-    )
+      Some(FactAction("just echoing last fact", Zssh.sshIoFromFacts(m=>Zssh.scriptIO(s"echo Displaying fact value: ${m("hostNameOfA").asInstanceOf[SshScriptIOResult].stdout.mkString}")))),  // Could be set to None to opt out doing anything.
+    ),
+    ssh(
+      "192.168.99.100",
+      2023,
+      Some("test"),
+      Some("test"),
+      None,
+      Some(FactAction("Chained at same level", Zssh.sshIoFromFacts(m=>Zssh.scriptIO(s"echo What we got: ${m("just echoing last fact").asInstanceOf[SshScriptIOResult].stdout.mkString}")))),  // Could be set to None to opt out doing anything.
+    ),
+  )
 ```
 
 ---

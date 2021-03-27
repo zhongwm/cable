@@ -37,7 +37,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import TypeDef._
 import Zssh._
 import HostConnS._
-import zio.Chunk
+import zio.{Chunk, ZIO}
 import Evaluation._
 
 class ExecSpec extends AnyWordSpec with Matchers {
@@ -68,8 +68,6 @@ class ExecSpec extends AnyWordSpec with Matchers {
       HCNil
 
 
-  // type1:   Parental[(Int, (Chunk[String], Chunk[String])), (Nested[Unit, Nothing], Nested[Unit, Nothing])]
-  // type2:   Parental[Nothing, Nothing, (Int, (Chunk[String], Chunk[String])), (Nested[Unit, Nothing], Nested[Unit, Nothing])]
   val script =
     ssh(
       "192.168.99.100",
@@ -101,10 +99,14 @@ class ExecSpec extends AnyWordSpec with Matchers {
   "EagerExec" when {
     "execute" should {
       "succeed" in {
-        val result = simpleNestedTask.runI()
-        val listResult = flatListTask.runI()
-        println(result.facts)
-        println(listResult.facts)
+        val result: NestedC[Unit, types.SshScriptIOResult] = simpleNestedTask.runI()
+        val listResult = zio.Runtime.default.unsafeRun(ZIO.effect{flatListTask.run()}.either)
+        println(result.result)
+        println(listResult.isRight)
+        listResult.map{r => println(r.a.result.map(_.stdout))}
+        listResult.map{r =>
+          r.b.result.map(_.succeeded) shouldBe Some(true)
+        }
       }
     }
   }

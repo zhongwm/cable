@@ -193,13 +193,13 @@ object HdfSyntax {
         ha match {
           case SshAction(sshio) =>
             val ur = Runtime.default.unsafeRun(sshio.flatMap {
-              case result: SshScriptIOResult if result._1 != 0 => ZIO.fail(new IOException(s"Command failed with non-zero exit code.\n${result._2._2.mkString}"))
+              case result: SshScriptIOResult if result.exitCode != 0 => ZIO.fail(new IOException(s"Command failed with non-zero exit code.\n${result.stderr.mkString}"))
               case ar => ZIO.succeed(ar)
             }.provideCustomLayer(sl ++ inZsshContext.zsshContextL))
             (inZsshContext, Some(ur), sl)
           case FactAction(name, sshio) =>
             val ur = Runtime.default.unsafeRun(sshio.flatMap {
-              case result: SshScriptIOResult if result._1 != 0 => ZIO.fail(new IOException(s"Command failed with non-zero exit code.\n${result._2._2.mkString}"))
+              case result: SshScriptIOResult if result.exitCode != 0 => ZIO.fail(new IOException(s"Command failed with non-zero exit code.\n${result.stderr.mkString}"))
               case ar => ZIO.succeed(ar)
             }.map(a => (inZsshContext.updated(name -> a), Some(a))).provideCustomLayer(sl ++ inZsshContext.zsshContextL))
             (ur._1, ur._2, sl)

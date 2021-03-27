@@ -181,15 +181,25 @@ object Zssh {
 
     type SshIO[+A] = ZIO[ZEnv with Has[ClientSession] with Has[ZsshContext], IOException, A]
 
-    type SshScriptIOResult = (Int, (Chunk[String], Chunk[String]))
-
     val ev1 = implicitly[ZIO[Blocking with Has[ClientSession], IOException, Int] <:< SshIO[Int]]
 
-    implicit class SshScriptIOResultT(r: SshScriptIOResult) {
-      val exitCode: Int = r._1
-      val stdout: Chunk[String] = r._2._1
-      val stderr: Chunk[String] = r._2._2
+    sealed trait SshIOResult[+A] {
+      def succeeded: Boolean
+      def asStr: String
+      override def toString: String = asStr
     }
+    case class SshScriptIOResult(exitCode: Int, stdout: Chunk[String], stderr: Chunk[String]) extends SshIOResult[(Int, Chunk[String], Chunk[String])] {
+      override def succeeded: Boolean = exitCode == 0
+
+      override def asStr: String = stdout.mkString
+    }
+    case class SshDownloadIOResult(succeeded: Boolean) extends SshIOResult[Boolean] {
+      override def asStr: String = s"Download ${if (succeeded) "succeeded" else "failed"}"
+    }
+    case class SshUploadIOResult(succeeded: Boolean) extends SshIOResult[Boolean] {
+      override def asStr: String = s"Upload ${if (succeeded) "succeeded" else "failed"}"
+    }
+
   }
 
   import types._
@@ -448,7 +458,7 @@ object Zssh {
         )
       })
       rc <- ZIO.succeed(setup._1.getExitStatus.intValue())
-    } yield (rc, outS)
+    } yield SshScriptIOResult(rc, outS._1, outS._2)
 
   def scpUploadIO(path: String, targetPath: Option[String] = None) =
     for {
@@ -464,7 +474,7 @@ object Zssh {
         // doo stuff here.
         sc.upload(path, targetPath.getOrElse("/tmp"))
       })
-    } yield sc
+    } yield SshUploadIOResult(true)
 
   def scpDownloadIO(path: String, targetPath: Option[String] = None) =
     for {
@@ -479,7 +489,7 @@ object Zssh {
         val sc         = scpCreator.createScpClient(cs)
         sc.download(path, Paths.get("."))
       })
-    } yield sc
+    } yield SshDownloadIOResult(true)
 
   def jumpTo(targetIp: String, targetPort: Int)(
     cs: ClientSession
@@ -523,58 +533,5 @@ object Zssh {
 
   def forwardingTrackerFinalizer(forwarder: PortForwardingTracker) =
     UIO.effectTotal(forwarder.close())
-
-  def main(args: Array[String]): Unit = {
-
-    val runtime2 = Runtime.unsafeFromLayer(ZEnv.live >+> clientLayer)
-    val conn     = Zssh(Left("192.168.99.100", 2022), password = Some("test"), username = Some("test"))
-    val result: (Int, (Chunk[String], Chunk[String])) = runtime2.unsafeRun(
-      conn
-        .sessionM(script( /*"ls /;exit\n"*/ "ls -l /"))
-        .catchAll(e => ZIO.succeed(3, (Chunk(""), Chunk(s"${e.getMessage}"))))
-    )
-    runtime2.shutdown()
-    println(result._1)
-    println(result._2._1.toList.mkString("\n"))
-    println(result._2._2.toList.mkString("\n"))
-  }
-
-  def main2(args: Array[String]): Unit = {
-    val runtime = Runtime.unsafeFromLayer(ZEnv.live)
-    val t = for {
-      s <- ZIO.effect {
-        new FileInputStream("/tmp/adobegc.log")
-      }
-        .bracket(
-          in =>
-            ZIO.effect {
-              if (log.isDebugEnabled) log.debug("Releasing InputStream")
-              in.close()
-            }.ignore,
-          in =>
-            ZIO.bracket {
-              ZIO.effect {
-                Source.fromInputStream(in)
-              }
-            } { source =>
-              ZIO.effectTotal {
-                source.close()
-              } >>= { _ =>
-                putStrLn("Releasing source.")
-              }
-            } { source =>
-              val eff = ZIO.effect(source.getLines().toList.head)
-              for {
-                str1 <- eff
-                _    <- putStrLn("End!")
-              } yield (str1)
-            }
-        )
-      _ <- putStrLn(s)
-    } yield (s)
-    runtime.unsafeRun(t)
-    runtime.shutdown()
-  }
-
 }
 

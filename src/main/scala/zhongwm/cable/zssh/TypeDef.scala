@@ -48,22 +48,22 @@ object TypeDef {
 
   case class Nested[+Parent, +Child](a: Parent, b: Child)
 
-  sealed abstract class ZSContext[A](val facts: Option[A], val data: Map[String, _], val parentLayer: Option[SessionLayer], val currentLayer: Option[SessionLayer])
+  sealed abstract class ZSContext[A](val result: Option[A], val data: Map[String, _], val parentLayer: Option[SessionLayer], val currentLayer: Option[SessionLayer])
 
-  case class ZSSingleCtx[A](override val facts: Option[A], override val data: Map[String, _], override val parentLayer: Option[SessionLayer], override val currentLayer: Option[SessionLayer])
+  case class ZSSingleCtx[A](override val result: Option[A], override val data: Map[String, _], override val parentLayer: Option[SessionLayer], override val currentLayer: Option[SessionLayer])
     extends ZSContext(
-      facts, data, parentLayer, currentLayer)
+      result, data, parentLayer, currentLayer)
 
   case class +|:[A, B](a: ZSContext[A], b: ZSContext[B])
     extends ZSContext[(A, B)](
-      a.facts.flatMap{av=>b.facts.map{bv => (av, bv)}}, a.data ++ b.data, a.parentLayer, a.currentLayer)
+      a.result.flatMap{ av=>b.result.map{ bv => (av, bv)}}, a.data ++ b.data, a.parentLayer, a.currentLayer)
 
   /**
    * {{{val nc1 = NestedC(ZSSingleCtx(Some(1), Map.empty, None, None), ZSSingleCtx(Some(""), Map.empty, None, None))}}}
    */
-  case class NestedC[A, B](a: ZSContext[A], b: ZSContext[B])
+  case class NestedC[A, B](parent: ZSContext[A], child: ZSContext[B])
     extends ZSContext[Nested[A, B]](
-      a.facts.flatMap{av=>b.facts.map{bv=>Nested(av, bv)}}, a.data ++ b.data, a.parentLayer, a.currentLayer)
+      parent.result.flatMap{ av=>child.result.map{ bv=>Nested(av, bv)}}, parent.data ++ child.data, parent.parentLayer, parent.currentLayer)
 
   case class Unital(override val data: Map[String, _], override val parentLayer: Option[SessionLayer], override val currentLayer: Option[SessionLayer])
     extends ZSContext[Unit](
@@ -128,11 +128,11 @@ object TypeDef {
           case SshAction(a) =>
             val layer = deriveSessionLayer(ctx.parentLayer, hc)
             val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer ++ ZsshContextInternal.lFromData(ctx.data)))
-            ZSSingleCtx(facts = Some(result), ctx.data, ctx.parentLayer, currentLayer = Some(layer))
+            ZSSingleCtx(result = Some(result), ctx.data, ctx.parentLayer, currentLayer = Some(layer))
           case FactAction(name, a) =>
             val layer = deriveSessionLayer(ctx.parentLayer, hc)
             val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer ++ ZsshContextInternal.lFromData(ctx.data)))
-            ZSSingleCtx(facts = Some(result), ctx.data + (name -> result), ctx.parentLayer, Some(layer))
+            ZSSingleCtx(result = Some(result), ctx.data + (name -> result), ctx.parentLayer, Some(layer))
         }
       }
     }

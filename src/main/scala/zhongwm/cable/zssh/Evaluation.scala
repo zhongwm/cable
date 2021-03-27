@@ -49,11 +49,11 @@ object Evaluation {
         case SshAction(a) =>
           val layer = deriveSessionLayer(ctx.parentLayer, x.hc)
           val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer ++ ZsshContextInternal.lFromData(ctx.data)))
-          ZSSingleCtx(facts = Some(result), ctx.data, ctx.parentLayer, currentLayer = Some(layer))
+          ZSSingleCtx(result = Some(result), ctx.data, ctx.parentLayer, currentLayer = Some(layer))
         case FactAction(name, a) =>
           val layer = deriveSessionLayer(ctx.parentLayer, x.hc)
           val result = Runtime.default.unsafeRun(a.provideCustomLayer(layer ++ ZsshContextInternal.lFromData(ctx.data)))
-          ZSSingleCtx(facts = Some(result), ctx.data + (name -> result), ctx.parentLayer, Some(layer))
+          ZSSingleCtx(result = Some(result), ctx.data + (name -> result), ctx.parentLayer, Some(layer))
       }
     }
   }
@@ -87,10 +87,4 @@ object Evaluation {
       Unital(ctx.data, ctx.parentLayer, ctx.currentLayer)
     }
   }
-
-
-  /*implicit val action = Action("1", 2, "3", "4", scriptIO(""))
-  implicit val nested1 = Parental(action, action)
-  val a = action.runI()
-  val n = nested1.runI()*/
 }

@@ -56,10 +56,10 @@ object ZsshZTest {
         }
       }
     }
-    _ <- putStrLn(rst._1._2._1.mkString)
-    _ <- putStrLn(rst._1._2._2.mkString)
+    _ <- putStrLn(rst._1.stdout.mkString)
+    _ <- putStrLn(rst._1.stderr.mkString)
     xc <- ZIO.succeed {
-      zio.ExitCode(rst._1._1)
+      zio.ExitCode(rst._1.exitCode)
     }
   } yield (xc)
 

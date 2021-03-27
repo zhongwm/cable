@@ -37,6 +37,7 @@ import org.scalatest.BeforeAndAfter
 import zio._
 import zio.console._
 import Zssh._
+import Zssh.types._
 
 class ZsshSpec extends AnyWordSpec with BeforeAndAfter {
   var runtime: Runtime.Managed[zio.ZEnv with Has[SshClient]] =
@@ -50,16 +51,16 @@ class ZsshSpec extends AnyWordSpec with BeforeAndAfter {
         username = Some("test")
       )
 
-      val result: (Int, (Chunk[String], Chunk[String])) = runtime.unsafeRun(
+      val result = runtime.unsafeRun(
         conn
           .sessionM(script( /*"ls /;exit\n"*/ "ls -l /"))
-          .catchAll(e => ZIO.succeed(3, (Chunk(""), Chunk(s"${e.getMessage}"))))
+          .catchAll(e => ZIO.succeed(SshScriptIOResult(3, Chunk(""), Chunk(s"${e.getMessage}"))))
       )
 
       "be ok" in {
-        println(result._1)
-        println(result._2._1.toList.mkString("\n"))
-        println(result._2._2.toList.mkString("\n"))
+        println(result.exitCode)
+        println(result.stdout.mkString)
+        println(result.stderr.mkString)
       }
     }
 
@@ -79,10 +80,10 @@ class ZsshSpec extends AnyWordSpec with BeforeAndAfter {
                 }
               }
           }
-          _ <- putStrLn(rst._1._2._1.mkString)
-          _ <- putStrLn(rst._1._2._2.mkString)
+          _ <- putStrLn(rst._1.stdout.mkString)
+          _ <- putStrLn(rst._1.stderr.mkString)
           xc <- ZIO.succeed {
-            zio.ExitCode(rst._1._1)
+            zio.ExitCode(rst._1.exitCode)
           }
         } yield (xc)
         runtime.unsafeRun(process)

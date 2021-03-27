@@ -12,7 +12,7 @@ It supports ssh proxying, jumping over networks, tasks chaining.
 #### Installation
 
 ```scala
-libraryDependencies += "io.github.zhongwm" %% "cable" % "0.1.0"
+libraryDependencies += "io.github.zhongwm" %% "cable" % "0.1.1"
 ```
 
 ### Supports ssh proxying, in a monadic way!
