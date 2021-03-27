@@ -49,4 +49,13 @@ class HdfSyntaxSpec extends AnyWordSpec with Matchers {
       }
     }
   }
+  "Script2" when {
+    "executed" should {
+      "be ok" in {
+        val value = executeSshIO(script2)
+        pprint.pprintln(value)
+        value should not be null
+      }
+    }
+  }
 }

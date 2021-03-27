@@ -192,6 +192,8 @@ object Zssh {
     }
   }
 
+  import types._
+
   implicit val clientLayer: ZLayer[Blocking, Nothing, Has[SshClient]] =
     ZLayer fromManaged Managed.make {
       UIO.succeed {
@@ -365,6 +367,9 @@ object Zssh {
       cs <- ZIO.environment[Has[ClientSession]]
       r  <- script(cmd)(cs.get)
     } yield r
+
+  def sshIoFromFacts[A](buildIO: Map[String, _] => SshIO[A]): SshIO[A] =
+    ZIO.access[Has[ZsshContext]](_.get) >>= {facts => buildIO(facts.data)}
 
   def script(cmd: String)(cs: ClientSession) =
     for {

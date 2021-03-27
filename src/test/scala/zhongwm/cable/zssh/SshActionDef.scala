@@ -44,15 +44,15 @@ object SshActionDef {
       2022,
       Some("test"),
       Some("test"),
-      None,
-      Some(FactAction("Get a file and systemrel", ZIO.access[Has[ZsshContext]](_.get.data("hostNameOfA").asInstanceOf[SshScriptIOResult]._2._1) >>= {s => Zssh.scriptIO(s"echo Displaying fact value: ${s.mkString}")})),  // Could be set to None to opt out doing anything.
+      privateKey = None,
+      None,  // Or you can do something on the bastion host by saying: Some(SshAction(Zssh.scpDownloadIO("/etc/issue") *> Zssh.scriptIO("uname -r") *> Zssh.scriptIO("hostname"))
       ssh(
         "192.168.99.100",
         2023,
         Some("test"),
         Some("test"),
         None,
-        Some(FactAction("hostNameOfA", Zssh.scpDownloadIO("/etc/issue") *> Zssh.scriptIO("uname -r") *> Zssh.scriptIO("hostname")))
+        Some(SshAction(Zssh.scpDownloadIO("/etc/issue") *> Zssh.scriptIO("ls /"))),  // Could be set to None to opt out doing anything.
         /*ssh(
           "192.168.99.100",
           2023,
@@ -62,6 +62,48 @@ object SshActionDef {
           3
         )*/
       )
+    )
+
+  val script2 =
+    ssh(
+      "192.168.99.100",
+      2022,
+      Some("test"),
+      Some("test"),
+      None,
+      Some(FactAction("hostNameOfA", Zssh.scpDownloadIO("/etc/issue") *> Zssh.scriptIO("uname -r") *> Zssh.scriptIO("hostname"))),
+      ssh(
+        "192.168.99.100",
+        2023,
+        Some("test"),
+        Some("test"),
+        None,
+        Some(FactAction("just echoing last fact", Zssh.sshIoFromFacts(m=>Zssh.scriptIO(s"echo Displaying fact value: ${m("hostNameOfA").asInstanceOf[SshScriptIOResult].stdout.mkString}")))),  // Could be set to None to opt out doing anything.
+        /*ssh(
+          "192.168.99.100",
+          2023,
+          Some("test"),
+          Some("test"),
+          None,
+          3
+        )*/
+      ),
+      ssh(
+        "192.168.99.100",
+        2023,
+        Some("test"),
+        Some("test"),
+        None,
+        Some(FactAction("Chained at same level", Zssh.sshIoFromFacts(m=>Zssh.scriptIO(s"echo What we got: ${m("just echoing last fact").asInstanceOf[SshScriptIOResult].stdout.mkString}")))),  // Could be set to None to opt out doing anything.
+        /*ssh(
+          "192.168.99.100",
+          2023,
+          Some("test"),
+          Some("test"),
+          None,
+          3
+        )*/
+      ),
     )
 
   val scriptManualDef = HFix[HostConn, Any](

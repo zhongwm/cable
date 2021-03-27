@@ -125,28 +125,11 @@ object HdfSyntax {
     HCFix(ctor(parentCtx, getA(hc), hostConn2HostConnCInner(getList(hc), asParentOfChildren)))
   }
 
-  def execWithContext(initCtx: ZsshContext = ZsshContextInternal.empty): HCAlg[HostConnC, Exec, SessionLayer] = new HCAlg[HostConnC, Exec, SessionLayer] {
+  def execWithContext(initCtx: ZsshContext = ZsshContextInternal.empty): HCAlg[HostConnC, Exec, (ZsshContext, Option[_], SessionLayer)] = new HCAlg[HostConnC, Exec, (ZsshContext, Option[_], SessionLayer)] {
     var zsshContext: ZsshContext = initCtx
 
-    override def apply[A](fa: HostConnC[Exec, SessionLayer, A]): Exec[A] = {
-      fa.hc match {
-        case HostAction(_, _, _, _, _, action) =>
-          action match {
-            case SshAction(sshio) =>
-              Runtime.default.unsafeRun(sshio.flatMap {
-                case result: SshScriptIOResult if result._1 != 0 => ZIO.fail(new IOException(s"Command failed with non-zero exit code.\n${result._2._2.mkString}"))
-                case ar => ZIO.succeed(ar)
-              }.map(a => (zsshContext, Some(a))).provideCustomLayer(fa.context ++ zsshContext.zsshContextL))
-            case FactAction(name, sshio) =>
-              Runtime.default.unsafeRun(sshio.flatMap {
-                case result: SshScriptIOResult if result._1 != 0 => ZIO.fail(new IOException(s"Command failed with non-zero exit code.\n${result._2._2.mkString}"))
-                case ar => ZIO.succeed(ar)
-              }.tap(a => ZIO.effect{zsshContext = zsshContext.updated(name -> a)})
-                .map(a => (zsshContext, Some(a))).provideCustomLayer(fa.context ++ zsshContext.zsshContextL))
-          }
-        case HostConnInfoNop(_, _, _, _, _) =>
-          (zsshContext, None)
-      }
+    override def apply[A](fa: HostConnC[Exec, (ZsshContext, Option[_], SessionLayer), A]): Exec[A] = {
+      fa.context._2 :: fa.nextLevel.flatten
     }
   }
 
@@ -173,7 +156,7 @@ object HdfSyntax {
     }
   }
 
-  def toLayered[A](a: HCFix[HostConnC, Option[HostConnInfo[_]], A]): HCFix[HostConnC, SessionLayer, A] = {
+  def toLayered[A](a: HCFix[HostConnC, Option[HostConnInfo[_]], A], zsshContext: ZsshContext = ZsshContextInternal.empty): HCFix[HostConnC, (ZsshContext, Option[_], SessionLayer), A] = {
     val unfix = a.unfix
     def derive[T, U](parent: Option[HostConnInfo[T]], current: HostConnInfo[U]): SessionLayer = parent match {
       case None =>
@@ -191,13 +174,46 @@ object HdfSyntax {
             Zssh.jumpSessionL(derive(None, p), ho, port, userName, password, privKey)
         }
     }
-    HCFix(HostConnC(derive(unfix.context, unfix.hc), unfix.hc, unfix.nextLevel.foldLeft(List.empty[HCFix[HostConnC, SessionLayer, _]]){ (acc, i) => toLayered(i) :: acc}))
+
+    val cl = derive(unfix.context, unfix.hc)
+    val vr = evalActionWith(unfix.hc, zsshContext, cl)
+    HCFix(HostConnC(vr, unfix.hc,
+      unfix.nextLevel.foldRight(
+        (vr._1, List.empty[HCFix[HostConnC, (ZsshContext, Option[_], SessionLayer), _]])){ (i, acc) =>
+        val value: HCFix[HostConnC, (ZsshContext, Option[_], SessionLayer), _] = toLayered(i, acc._1)
+        (value.unfix.context._1, value :: acc._2)
+      }._2
+    ))
+  }
+
+  def evalActionWith[A](current: HostConnInfo[A], inZsshContext: ZsshContext, sl: SessionLayer) = {
+    current match {
+      case HostAction(ho, port, userName, password, privKey, ha) =>
+        val sl = Zssh.sessionL(Left(ho, port), userName, password, privKey)
+        ha match {
+          case SshAction(sshio) =>
+            val ur = Runtime.default.unsafeRun(sshio.flatMap {
+              case result: SshScriptIOResult if result._1 != 0 => ZIO.fail(new IOException(s"Command failed with non-zero exit code.\n${result._2._2.mkString}"))
+              case ar => ZIO.succeed(ar)
+            }.provideCustomLayer(sl ++ inZsshContext.zsshContextL))
+            (inZsshContext, Some(ur), sl)
+          case FactAction(name, sshio) =>
+            val ur = Runtime.default.unsafeRun(sshio.flatMap {
+              case result: SshScriptIOResult if result._1 != 0 => ZIO.fail(new IOException(s"Command failed with non-zero exit code.\n${result._2._2.mkString}"))
+              case ar => ZIO.succeed(ar)
+            }.map(a => (inZsshContext.updated(name -> a), Some(a))).provideCustomLayer(sl ++ inZsshContext.zsshContextL))
+            (ur._1, ur._2, sl)
+        }
+      case HostConnInfoNop(ho, port, userName, password, privKey) =>
+        val sl = Zssh.sessionL(Left(ho, port), userName, password, privKey)
+        (inZsshContext, None, sl)
+    }
   }
 
   def executeSshIO[A](sshIO: HFix[HostConn, A]): Exec[A] = {
     val initCtx: Option[HostConnInfo[_]] = None
     val value: HCFix[HostConnC, Option[HostConnInfo[_]], A] = hostConn2HostConnC(sshIO, initCtx, Some(_))
-    implicit val layered = toLayered(value)
+    implicit val layered: HCFix[HostConnC, (ZsshContext, Option[_], SessionLayer), A] = toLayered(value)
     hcFold(execWithContext(ZsshContextInternal.empty), layered)
   }
 
