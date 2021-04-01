@@ -32,17 +32,21 @@
 
 package zhongwm.cable.zssh
 
+import zhongwm.cable.parser.SshConfigParser.{configRegistry, defaultSshUser, defaultUserSshKeyPair}
 import zhongwm.cable.zssh.Zssh.{jumpSessionL, sessionL}
 import zhongwm.cable.zssh.Zssh.types._
 import zhongwm.cable.zssh.internal.ZsshContextInternal
+import cats.implicits._
+import scala.util._
+import zhongwm.cable.parser.{HostItem, ProxyHostByName, ProxySetting, SshConfigParser}
 import zio.Runtime
 
 object TypeDef {
 
   case class HostConnInfo(ho: String,
-                          port: Int,
-                          username: Option[String] = Some("root"),
-                          password: Option[String],
+                          port: Option[Int] = None,
+                          username: Option[String] = None,
+                          password: Option[String] = None,
                           privateKey: Option[KeyPair] = None,
                          )
 
@@ -76,11 +80,43 @@ object TypeDef {
     def run(ctx: ZSContext[A] = ZSSingleCtx(None, Map.empty, None, None)): Repr
   }
 
-  protected[zssh] def deriveSessionLayer(p: Option[SessionLayer], hc: HostConnInfo): SessionLayer = p match {
-    case Some(l) =>
-      jumpSessionL(l, hc.ho, hc.port, hc.username, hc.password, hc.privateKey)
-    case None =>
-      sessionL(hc.ho, hc.port, hc.username, hc.password, hc.privateKey)
+  private[cable] def deriveParentSessionFromSshConfig(proxySetting: ProxySetting): Option[SessionLayer] = {
+    proxySetting match {
+      case ProxyHostByName(name) =>
+        configRegistry.flatMap(_.hostItems.get(name)).flatMap(_.proxyJumper).flatMap(deriveParentSessionFromSshConfig)
+      case HostItem(name, hostName, port, username, password, privateKey, proxyJumper) =>
+        proxyJumper.flatMap {
+          case ps@ProxyHostByName(_) =>
+            deriveParentSessionFromSshConfig(ps)
+          case _ =>
+            // Not gonna happen as we know for sure from the form of the ProxyCommand, and we've parsed it.
+            None
+        }.fold(
+          (hostName, port.orElse(Some(22))).mapN((h,p) => sessionL(Left(h, p), username, password, privateKey))
+        )( pl =>
+          (hostName, port.orElse(Some(22))).mapN((h,p) => jumpSessionL(pl, h, p, username, password, privateKey))
+        )
+    }
+  }
+
+  private[cable] def getConfiguredProxySetting(hostName: String): Option[ProxySetting] = {
+    configRegistry.flatMap(_.hostItems.get(hostName))
+  }
+
+  def layerForHostConnInfo(hc: HostConnInfo): SessionLayer =
+    getConfiguredProxySetting(hc.ho).flatMap(deriveParentSessionFromSshConfig).fold(
+      sessionL(hc.ho, hc.port.getOrElse(22), hc.username, hc.password, hc.privateKey)
+    )(pl =>
+      jumpSessionL(pl, hc.ho, hc.port.getOrElse(22), hc.username, hc.password, hc.privateKey)
+    )
+
+  protected[zssh] def deriveSessionLayer(p: Option[SessionLayer], hc: HostConnInfo): SessionLayer = {
+    p match {
+      case Some(l) =>
+        jumpSessionL(l, hc.ho, hc.port.getOrElse(22), hc.username, hc.password, hc.privateKey)
+      case None =>
+        layerForHostConnInfo(hc)
+    }
   }
 
 
@@ -116,8 +152,29 @@ object TypeDef {
     }
 
     object JustConnect {
-      def apply(ho: String, port: Int, username: String, password: String): JustConnect = JustConnect(HostConnInfo(ho, port, Some(username), Some(password), None))
-      def apply(ho: String, port: Int, username: String, privateKey: Option[KeyPair] = None): JustConnect = JustConnect(HostConnInfo(ho, port, Some(username), None, privateKey))
+      def apply(ho: String, port: Option[Int] = None, username: Option[String] = None, password: Option[String] = None, privateKey: Option[KeyPair] = None): JustConnect =
+        JustConnect(respectSshConfig(HostConnInfo(ho, port, username, password, privateKey)))
+    }
+
+
+    /**
+     * Default values from user home ssh config.
+     *
+     * Explicitly specified attributes take precedence.
+     * When defaulting password, if a private key is given, then don't default it.
+     * @param hostConn
+     * @return
+     */
+    def respectSshConfig(hostConn: HostConnInfo): HostConnInfo = {
+      val configItem = configRegistry.flatMap(_.hostItems.get(hostConn.ho))
+      val hostName: String = configItem.flatMap(_.hostName).getOrElse(hostConn.ho)
+      val port: Int = hostConn.port.orElse(configItem.flatMap(_.port)).getOrElse(22)
+      val userName: String = hostConn.username.orElse(configItem.flatMap(_.username)).getOrElse(defaultSshUser)
+      // private key comes over password in priority, so we first check if a privateKey is specified.
+      // if privateKey is not given from api, default to ssh config.
+      val password: Option[String] = hostConn.password.orElse(hostConn.privateKey.fold(configItem.flatMap(_.password))(_=>None))
+      val privateKey: Option[KeyPair] = hostConn.privateKey.orElse(configItem.flatMap(_.privateKey)).orElse(defaultUserSshKeyPair.toOption)
+      hostConn.copy(ho=hostName, port=Some(port), username=Some(userName), password=password, privateKey=privateKey)
     }
 
     final case class Action[A](hc: HostConnInfo, action: TAction[A]) extends HostConnS[A] {
@@ -138,10 +195,10 @@ object TypeDef {
     }
 
     object Action {
-      def apply[A](ho: String, port: Int, username: String, password: String, a: SshIO[A]): Action[A] = Action(HostConnInfo(ho, port, Some(username), Some(password), None), SshAction(a))
-      def apply[A](ho: String, port: Int, username: String, password: String, factName: String, a: SshIO[A]): Action[A] = Action(HostConnInfo(ho, port, Some(username), Some(password), None), FactAction(factName, a))
-      def apply[A](ho: String, port: Int, username: String, privateKey: Option[KeyPair], a: SshIO[A]): Action[A] = Action(HostConnInfo(ho, port, Some(username), None, privateKey), SshAction(a))
-      def apply[A](ho: String, port: Int, username: String, privateKey: Option[KeyPair], factName: String, a: SshIO[A]): Action[A] = Action(HostConnInfo(ho, port, Some(username), None, privateKey), FactAction(factName, a))
+      def apply[A](ho: String, port: Option[Int] = None, username: Option[String] = None, password: Option[String] = None, privateKey: Option[KeyPair] = None, action: SshIO[A]): Action[A] =
+        Action(respectSshConfig(HostConnInfo(ho, port, username, password, privateKey)), SshAction(action))
+      def asFact[A](ho: String, port: Option[Int] = None, username: Option[String] = None, password: Option[String] = None, privateKey: Option[KeyPair] = None, factName: String, action: SshIO[A]): Action[A] =
+        Action(respectSshConfig(HostConnInfo(ho, port, username, password, privateKey)), FactAction(factName, action))
     }
 
     sealed trait HCNil extends HostConnS[Unit] {
@@ -157,15 +214,15 @@ object TypeDef {
 
     object HCNil extends HCNil
 
-    def ssh[A, S <: HostConnS[A], B](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], action: SshIO[A], children: HostConnS[B]) = {
+    def ssh[A, S <: HostConnS[A], B](host: String, port: Option[Int], username: Option[String], password: Option[String], privateKey: Option[KeyPair], action: SshIO[A], children: HostConnS[B]) = {
       Parental(Action(HostConnInfo(host, port, username, password, privateKey), SshAction(action)), children)
     }
 
-    def ssh[A, S <: HostConnS[A], B](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], factName: String, action: SshIO[A], children: HostConnS[B]) = {
+    def ssh[A, S <: HostConnS[A], B](host: String, port: Option[Int], username: Option[String], password: Option[String], privateKey: Option[KeyPair], factName: String, action: SshIO[A], children: HostConnS[B]) = {
       Parental(Action(HostConnInfo(host, port, username, password, privateKey), FactAction(factName, action)), children)
     }
 
-    def ssh[A, S <: HostConnS[A], B](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], children: HostConnS[B]) = {
+    def ssh[A, S <: HostConnS[A], B](host: String, port: Option[Int], username: Option[String], password: Option[String], privateKey: Option[KeyPair], children: HostConnS[B]) = {
       Parental(JustConnect(HostConnInfo(host, port, username, password, privateKey)), children)
     }
 

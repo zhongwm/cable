@@ -30,29 +30,25 @@
 
 /* Written by Wenming Zhong */
 
-package zhongwm.cable.zssh
+package zhongwm.cable.core
 
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import zhongwm.cable.zssh.SshActionDef.script
-import zhongwm.cable.zssh.Zssh.types.SessionLayer
-import zhongwm.cable.zssh.hdfsyntax.Hdf._
-import zhongwm.cable.zssh.hdfsyntax.HdfSyntax._
+import io.github.zhongwm.commons.securityio._
+import java.security.KeyPair
 
-class HdfSyntaxInternalSpec extends AnyWordSpec with Matchers {
-  "Script" when {
-    "inspecting" should {
-      "show inspection result" in {
-        print(hFold(inspection, script))
-      }
+import java.nio.file.Paths
+import scala.util._
+import scala.io._
 
-    }
-    "convert to " should {
-      "succeed " in {
-        val initCtx: Option[DHostConn[_]] = None
-        val result = hostConn2HostConnC(script, initCtx, Some(_))
-        pprint.pprintln(result)
-      }
+trait SshSecurityKey {
+  def loadSshKeyPair(f: String = SshSecurityKey.defaultSshPrivateKeyPath): Try[KeyPair] = {
+    Using(Source.fromFile(Paths.get(sys.props("user.home"), ".ssh", "id_rsa.pub").toFile)) { source =>
+      val publicKey = SshRsaPublicKeyReader.parseSshRsaPublicKey(source.mkString)
+      val privateKeyReader = new PrivateKeyReader(f.replaceFirst("~", sys.props("user.home")))
+      new KeyPair(publicKey, privateKeyReader.getPrivateKey)
     }
   }
+}
+
+object SshSecurityKey extends SshSecurityKey {
+  val defaultSshPrivateKeyPath = Paths.get(sys.props("user.home"), ".ssh", "id_rsa").toFile.getAbsolutePath
 }

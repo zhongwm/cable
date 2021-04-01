@@ -43,42 +43,43 @@ import Evaluation._
 class ExecSpec extends AnyWordSpec with Matchers {
   
   val simpleTask =
-    Action("192.168.99.100", 2023, "test", "test",
+    Action("192.168.99.100", Some(2023), Some("test"), Some("test"), action =
       scriptIO("hostname") <&>
       scpUploadIO("build.sbt") <&
       scpDownloadIO("/etc/issue")
     )
 
   val flatListTask =
-    Action("192.168.99.100", 2022, "test", "test", "hostNameA", scriptIO("sleep 5; hostname")) +:
-    Action("192.168.99.100", 2023, "test", "test", sshIoFromFactsM(m => scriptIO(s"echo The last fact we got is ${m("hostNameA")}")) <& scpDownloadIO("/etc/issue"))
+    Action.asFact("192.168.99.100", Some(2022), Some("test"), Some("test"), factName = "hostNameA", action=scriptIO("sleep 5; hostname")) +:
+    Action("192.168.99.100", Some(2023), Some("test"), Some("test"), action = sshIoFromFactsM(m => scriptIO(s"echo The last fact we got is ${m("hostNameA")}")) <& scpDownloadIO("/etc/issue"))
 
   val simpleNestedTask = Parental(
-    JustConnect("192.168.99.100", 2022, "test", "test"),
-    Action("192.168.99.100", 2023, "test", "test", scriptIO("hostname"))
+    // JustConnect("192.168.99.100", Some(2022), Some("test"), Some("test")),
+    JustConnect("testHost1", password = Some("test")),
+    Action("testHost2", password = Some("test"), action = scriptIO("hostname"))
   )
   val compoundSample =
-    Action("192.168.99.100", 2022, "test", "test", "TheHostNameOfA", scriptIO("hostname")) +:
+    Action.asFact("192.168.99.100", Some(2022), Some("test"), Some("test"), factName = "TheHostNameOfA", action = scriptIO("hostname")) +:
       Parental(
-        JustConnect("192.168.99.100", 2023, "test", "test"),
-        Action("192.168.99.100", 2022, "test", "test", scriptIO("hostname")) +:
-          Action("192.168.99.100", 2023, "test", "test", sshIoFromFactsM(d => scriptIO(s"echo The last fact we got is ${d("TheHostNameOfA")}")) <*> scriptIO("echo Current host is $(hostname)"))
+        JustConnect("192.168.99.100", Some(2023), Some("test"), Some("test")),
+        Action("192.168.99.100", Some(2022), Some("test"), Some("test"), action = scriptIO("hostname")) +:
+          Action("192.168.99.100", Some(2023), Some("test"), Some("test"), action = sshIoFromFactsM(d => scriptIO(s"echo The last fact we got is ${d("TheHostNameOfA")}")) <*> scriptIO("echo Current host is $(hostname)"))
       ) +:
-      Action("192.168.99.100", 2023, "test", "test", scriptIO("hostname")) +:
+      Action("192.168.99.100", Some(2023), Some("test"), Some("test"), action = scriptIO("hostname")) +:
       HCNil
 
 
   val script =
     ssh(
       "192.168.99.100",
-      2022,
+      Some(2022),
       Some("test"),
       Some("test"),
       None,
       Zssh.scriptIO("hostname") *> Zssh.scriptIO("echo /etc/issue"),
       ssh(
         "192.168.99.100",
-        2023,
+        Some(2023),
         Some("test"),
         Some("test"),
         None,
@@ -87,7 +88,7 @@ class ExecSpec extends AnyWordSpec with Matchers {
       ) +:
         ssh(
           "192.168.99.100",
-          2023,
+          Some(2023),
           Some("test"),
           Some("test"),
           None,
@@ -99,6 +100,7 @@ class ExecSpec extends AnyWordSpec with Matchers {
   "EagerExec" when {
     "execute" should {
       "succeed" in {
+        println(simpleNestedTask.hc)
         val result: NestedC[Unit, types.SshScriptIOResult] = simpleNestedTask.runI()
         val listResult = zio.Runtime.default.unsafeRun(ZIO.effect{flatListTask.run()}.either)
         println(result.result)

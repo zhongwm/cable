@@ -4,7 +4,7 @@ import Dependencies._
 name := "cable"
 
 // library version
-ThisBuild / version := "0.2.0"
+ThisBuild / version := "0.3.0"
 
 // groupId, SCM, license information
 ThisBuild / organization := "io.github.zhongwm"

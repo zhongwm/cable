@@ -30,29 +30,19 @@
 
 /* Written by Wenming Zhong */
 
-package zhongwm.cable.zssh
+package zhongwm.cable.parser
 
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import zhongwm.cable.zssh.SshActionDef.script
-import zhongwm.cable.zssh.Zssh.types.SessionLayer
-import zhongwm.cable.zssh.hdfsyntax.Hdf._
-import zhongwm.cable.zssh.hdfsyntax.HdfSyntax._
+import scala.util._
 
-class HdfSyntaxInternalSpec extends AnyWordSpec with Matchers {
-  "Script" when {
-    "inspecting" should {
-      "show inspection result" in {
-        print(hFold(inspection, script))
-      }
-
-    }
-    "convert to " should {
-      "succeed " in {
-        val initCtx: Option[DHostConn[_]] = None
-        val result = hostConn2HostConnC(script, initCtx, Some(_))
-        pprint.pprintln(result)
-      }
+trait ShellUtils {
+  def stripeQuotedString(s: String): Try[String] = {
+    if (s.startsWith("'") || s.startsWith("\"")) {
+      if (s.length >= 2) Success(s.tail.dropRight(1))
+      else Failure(new RuntimeException(s"Quoted string missing closing quote: $s"))
+    } else {
+      Success(s)
     }
   }
 }
+
+object ShellUtils extends ShellUtils

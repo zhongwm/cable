@@ -34,32 +34,25 @@ package zhongwm.cable.zssh.hdfsyntax
 
 import zhongwm.cable.zssh.Zssh.types._
 import cats.~>
-import zhongwm.cable.zssh.{TAction, SshAction, ZsshContext}
+import zhongwm.cable.zssh.TypeDef.HostConnInfo
+import zhongwm.cable.zssh.TAction
 
 object Hdf {
 
-  sealed trait HostConnInfo[+A]
-  case class HostAction[+A](ho: String,
-                             port: Int,
-                             userName: Option[String] = Some("root"),
-                             password: Option[String],
-                             privKey: Option[KeyPair],
-                             action: TAction[A]) extends HostConnInfo[A]
+  sealed trait DHostConn[+A]
+  case class HostAction[+A](hostConnInfo: HostConnInfo,
+                             action: TAction[A]) extends DHostConn[A]
 
-  case class HostConnInfoNop[+A](ho: String,
-                                 port: Int,
-                                 userName: Option[String] = Some("root"),
-                                 password: Option[String],
-                                 privKey: Option[KeyPair]
-                                ) extends HostConnInfo[Nothing]
+  case class HostConnInfoNop[+A](hostConnInfo: HostConnInfo
+                                ) extends DHostConn[Nothing]
 
-  case class HostConn[F[+_], +T](hc: HostConnInfo[T], nextLevel: List[F[_]])
+  case class HostConn[F[+_], +T](hc: DHostConn[T], nextLevel: List[F[_]])
 
   /**
    * A context can be an adaptive concept, it could either be a parent node
    * inside some meta(higher level) information or a context when running.
    */
-  case class HostConnC[F[+_], +C, +T](context: C, hc: HostConnInfo[T], nextLevel: List[F[_]])
+  case class HostConnC[F[+_], +C, +T](context: C, hc: DHostConn[T], nextLevel: List[F[_]])
 
   case class HostConnMat[F[+_], +T](parentSessionL: Option[SessionLayer], sl: SessionLayer, hm: HostConnInfoMat[T], nextLevel: List[F[_]])
 
@@ -67,12 +60,12 @@ object Hdf {
   case class HCFix[F[_[+_], +_, +_], C, +A](unfix: F[HCFix[F, C, +*], C, A])
   case class HCDFix[F[_[+_, +_], +_, +_], +C, +A](unfix: F[λ[(+[C], +[D]) => HCDFix[F, C, D]], C, A])
 
-  def ssh[A](host: String, port: Int, username: Option[String], password: Option[String], privateKey: Option[KeyPair], action: Option[TAction[A]], children: HFix[HostConn, _]*): HFix[HostConn, A] = {
+  def ssh[A](host: String, port: Option[Int]=None, username: Option[String]=None, password: Option[String]=None, privateKey: Option[KeyPair]=None, action: Option[TAction[A]]=None, children: Seq[HFix[HostConn, _]]=Nil): HFix[HostConn, A] = {
     action match {
       case None =>
-        HFix(HostConn(HostConnInfoNop(host, port, username, password, privateKey), children.toList))
+        HFix(HostConn(HostConnInfoNop(HostConnInfo(host, port, username, password, privateKey)), children.toList))
       case Some(taction) =>
-        HFix(HostConn(HostAction(host, port, username, password, privateKey, taction), children.toList))
+        HFix(HostConn(HostAction(HostConnInfo(host, port, username, password, privateKey), taction), children.toList))
     }
   }
 

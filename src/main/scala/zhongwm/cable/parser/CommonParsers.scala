@@ -30,29 +30,21 @@
 
 /* Written by Wenming Zhong */
 
-package zhongwm.cable.zssh
+package zhongwm.cable.parser
 
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import zhongwm.cable.zssh.SshActionDef.script
-import zhongwm.cable.zssh.Zssh.types.SessionLayer
-import zhongwm.cable.zssh.hdfsyntax.Hdf._
-import zhongwm.cable.zssh.hdfsyntax.HdfSyntax._
+import atto.Atto._
 
-class HdfSyntaxInternalSpec extends AnyWordSpec with Matchers {
-  "Script" when {
-    "inspecting" should {
-      "show inspection result" in {
-        print(hFold(inspection, script))
-      }
+trait CommonParsers {
+  val singleQuotedStringP = char('\'') ~> many(notChar('\'')) <~ char('\'')
+  val doubleQuotedStringP = char('"') ~> many(notChar('"')) <~ char('"')
+  val nonEmptyStrTillEndP =
+    many(charRange(32.toChar to 126.toChar)) <~ either(char('\n'), endOfChunk)
+  val horizontalNonQuotedNonWhitespace = charRange(33.toChar to 126.toChar)
+  val identifierP = many1(either(letterOrDigit, oneOf("-_.")))
+  val lineComment             = skipMany(horizontalWhitespace) ~> char('#') <~ many(notChar('\n')) <~ char('\n')
+  val emptyLineP              = skipMany(horizontalWhitespace) <~ char('\n')
+  val emptyOrJustCommentLineP = either(emptyLineP, lineComment)
+  val spaceOrTab              = many1(either(spaceChar, char('\t')))
 
-    }
-    "convert to " should {
-      "succeed " in {
-        val initCtx: Option[DHostConn[_]] = None
-        val result = hostConn2HostConnC(script, initCtx, Some(_))
-        pprint.pprintln(result)
-      }
-    }
-  }
 }
+

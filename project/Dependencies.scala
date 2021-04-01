@@ -19,6 +19,8 @@ object Dependencies {
     "org.typelevel" %% "cats-free" % catsVersion,
     "org.apache.sshd" % "sshd-netty" % sshdVersion,
     "org.apache.sshd" % "sshd-cli" % sshdVersion,
-    "net.i2p.crypto" % "eddsa" % "0.3.0"
+    "net.i2p.crypto" % "eddsa" % "0.3.0",
+    "com.google.guava" % "guava" % "30.1.1-jre",
+    "io.github.zhongwm.commons" % "javasecurityio" % "0.1.1"
   )
 }
