@@ -34,16 +34,16 @@ package zhongwm.cable.zssh.hdfsyntax
 
 import zhongwm.cable.zssh.Zssh.types._
 import cats.~>
-import zhongwm.cable.zssh.TypeDef.HostConnInfo
+import zhongwm.cable.zssh.TypeDef.Host
 import zhongwm.cable.zssh.TAction
 
 object Hdf {
 
   sealed trait DHostConn[+A]
-  case class HostAction[+A](hostConnInfo: HostConnInfo,
-                             action: TAction[A]) extends DHostConn[A]
+  case class HostAction[+A](hostConnInfo: Host,
+                            action: TAction[A]) extends DHostConn[A]
 
-  case class HostConnInfoNop[+A](hostConnInfo: HostConnInfo
+  case class HostNop[+A](hostConnInfo: Host
                                 ) extends DHostConn[Nothing]
 
   case class HostConn[F[+_], +T](hc: DHostConn[T], nextLevel: List[F[_]])
@@ -63,9 +63,9 @@ object Hdf {
   def ssh[A](host: String, port: Option[Int]=None, username: Option[String]=None, password: Option[String]=None, privateKey: Option[KeyPair]=None, action: Option[TAction[A]]=None, children: Seq[HFix[HostConn, _]]=Nil): HFix[HostConn, A] = {
     action match {
       case None =>
-        HFix(HostConn(HostConnInfoNop(HostConnInfo(host, port, username, password, privateKey)), children.toList))
+        HFix(HostConn(HostNop(Host(host, port, username, password, privateKey)), children.toList))
       case Some(taction) =>
-        HFix(HostConn(HostAction(HostConnInfo(host, port, username, password, privateKey), taction), children.toList))
+        HFix(HostConn(HostAction(Host(host, port, username, password, privateKey), taction), children.toList))
     }
   }
 

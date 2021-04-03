@@ -34,8 +34,8 @@ package zhongwm.cable.zssh.hdfsyntax
 
 import Hdf._
 import cats.{Id, ~>}
-import zhongwm.cable.zssh.TypeDef.{HostConnInfo, layerForHostConnInfo}
-import zhongwm.cable.zssh.TypeDef.HostConnS.respectSshConfig
+import zhongwm.cable.zssh.TypeDef.{Host, layerForHostConnInfo}
+import zhongwm.cable.zssh.TypeDef.respectSshConfig
 import zhongwm.cable.zssh.{FactAction, SshAction, Zssh, ZsshContext}
 import zhongwm.cable.zssh.Zssh.types._
 import zhongwm.cable.zssh.internal.ZsshContextInternal
@@ -138,7 +138,7 @@ object HdfSyntax {
   val inspection: HAlg[HostConn, Inspect] = new HAlg[HostConn, Inspect] {
     override def apply[A](fa: HostConn[Inspect, A]): Inspect[A] = {
       val current = fa.hc match {
-        case HostAction(HostConnInfo(ho, port, _, _, _), action) =>
+        case HostAction(Host(ho, port, _, _, _), action) =>
           action match {
             case SshAction(_) =>
               val rv = s"script in $ho:$port"
@@ -149,7 +149,7 @@ object HdfSyntax {
               println(rv)
               rv
           }
-        case HostConnInfoNop(HostConnInfo(ho, port, _, _, _)) =>
+        case HostNop(Host(ho, port, _, _, _)) =>
           val rv = s"Just connect $ho:$port"
           println(rv)
           rv
@@ -163,21 +163,19 @@ object HdfSyntax {
     def derive[T, U](parent: Option[DHostConn[T]], current: DHostConn[U]): SessionLayer = parent match {
       case None =>
         current match {
-          case HostAction(hci @ HostConnInfo(_, _, _, _, _), _) =>
-            val defaulted = respectSshConfig(hci)
-            layerForHostConnInfo(defaulted)
-          case HostConnInfoNop(hci @ HostConnInfo(_, _, _, _, _)) =>
-            val defaulted = respectSshConfig(hci)
-            layerForHostConnInfo(defaulted)
+          case HostAction(hci: Host, _) =>
+            layerForHostConnInfo(hci)
+          case HostNop(hci: Host) =>
+            layerForHostConnInfo(hci)
         }
       case Some(p) =>
         current match {
-          case HostAction(hci @ HostConnInfo(_, _, _, _, _), _) =>
+          case HostAction(hci: Host, _) =>
             val defaulted = respectSshConfig(hci)
-            Zssh.jumpSessionL(derive(None, p), defaulted.ho, defaulted.port.get, defaulted.username, defaulted.password, defaulted.privateKey)
-          case HostConnInfoNop(hci @ HostConnInfo(_, _, _, _, _)) =>
+            Zssh.jumpSessionL(derive(None, p), defaulted.host, defaulted.port.get, defaulted.username, defaulted.password, defaulted.privateKey)
+          case HostNop(hci: Host) =>
             val defaulted = respectSshConfig(hci)
-            Zssh.jumpSessionL(derive(None, p), defaulted.ho, defaulted.port.get, defaulted.username, defaulted.password, defaulted.privateKey)
+            Zssh.jumpSessionL(derive(None, p), defaulted.host, defaulted.port.get, defaulted.username, defaulted.password, defaulted.privateKey)
         }
     }
 
@@ -194,9 +192,7 @@ object HdfSyntax {
 
   def evalActionWith[A](current: DHostConn[A], inZsshContext: ZsshContext, sl: SessionLayer) = {
     current match {
-      case HostAction(hci @ HostConnInfo(_, _, _, _, _), ha) =>
-        val defaulted = respectSshConfig(hci)
-        val sl = layerForHostConnInfo(defaulted)
+      case HostAction(_, ha) =>
         ha match {
           case SshAction(sshio) =>
             val ur = Runtime.default.unsafeRun(sshio.flatMap {
@@ -211,9 +207,7 @@ object HdfSyntax {
             }.map(a => (inZsshContext.updated(name -> a), Some(a))).provideCustomLayer(sl ++ inZsshContext.zsshContextL))
             (ur._1, ur._2, sl)
         }
-      case HostConnInfoNop(hci @ HostConnInfo(_, _, _, _, _)) =>
-        val defaulted = respectSshConfig(hci)
-        val sl = layerForHostConnInfo(defaulted)
+      case HostNop(_) =>
         (inZsshContext, None, sl)
     }
   }

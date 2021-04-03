@@ -35,7 +35,7 @@ package zhongwm.cable.zssh
 import zhongwm.cable.zssh.hdfsyntax.Hdf._
 import zio._
 import Zssh.types._
-import zhongwm.cable.zssh.TypeDef.HostConnInfo
+import zhongwm.cable.zssh.TypeDef.Host
 
 object SshActionDef {
 
@@ -55,14 +55,6 @@ object SshActionDef {
         None,
         Some(SshAction(Zssh.scpDownloadIO("/etc/issue") *> Zssh.scriptIO("ls /"))),  // Could be set to None to opt out doing anything.
         Nil
-        /*ssh(
-          "192.168.99.100",
-          Some(2023),
-          Some("test"),
-          Some("test"),
-          None,
-          3
-        )*/
       ))
     )
 
@@ -80,16 +72,8 @@ object SshActionDef {
         Some("test"),
         Some("test"),
         None,
-        Some(FactAction("just echoing last fact", Zssh.sshIoFromFactsM(d=>Zssh.scriptIO(s"echo Displaying fact value: ${d("hostNameOfA")}")))),  // Could be set to None to opt out doing anything.
+        Some(FactAction("just echoing last fact", Zssh.sshIoFromFactsM(d=>Zssh.scriptIO(s"echo Displaying fact value: ${d("hostNameOfA")}, current host: `hostname`")))),  // Could be set to None to opt out doing anything.
         Nil
-        /*ssh(
-          "192.168.99.100",
-          Some(2023),
-          Some("test"),
-          Some("test"),
-          None,
-          3
-        )*/
       ),
       ssh(
         "192.168.99.100",
@@ -98,22 +82,15 @@ object SshActionDef {
         Some("test"),
         None,
         Some(FactAction("Chained at same level", Zssh.sshIoFromFactsM(d=>Zssh.scriptIO(s"echo What we got: ${d("just echoing last fact")}")))),  // Could be set to None to opt out doing anything.
-        Nil/*ssh(
-          "192.168.99.100",
-          Some(2023),
-          Some("test"),
-          Some("test"),
-          None,
-          3
-        )*/
+        Nil
       ),
       )
     )
 
   val scriptManualDef = HFix[HostConn, Any](
     HostConn(
-      HostConnInfoNop(
-        HostConnInfo("192.168.99.100",
+      HostNop(
+        Host("192.168.99.100",
         Some(2022),
         Some("test"),
         Some("test"),
@@ -125,7 +102,7 @@ object SshActionDef {
         HFix(
           HostConn(
             HostAction(
-              HostConnInfo("192.168.99.100",
+              Host("192.168.99.100",
               Some(2023),
               Some("test"),
               Some("test"),
@@ -134,22 +111,6 @@ object SshActionDef {
               SshAction(Zssh.scpUploadIO("build.sbt") *> Zssh.scpDownloadIO("/etc/issue"))
             ),
             Nil
-            /*List(
-              HFix(
-                HostConn(
-                  HostConnInfo(
-                    "192.168.99.100",
-                    Some(2023),
-                    Some("test"),
-                    Some("test"),
-                    None,
-                    // ScriptAction(() => "")
-                    ScriptAction(Zssh.scpDownloadIO("/etc/issue"))
-                  ),
-                  Nil
-                )
-              )
-            )*/
           )
         )
       )
@@ -159,7 +120,7 @@ object SshActionDef {
   val scriptManualDef3Tier = HFix[HostConn, Any](
     HostConn(
       HostAction(
-        HostConnInfo("192.168.99.100",
+        Host("192.168.99.100",
         Some(2022),
         Some("test"),
         Some("test"),
@@ -171,7 +132,7 @@ object SshActionDef {
         HFix(
           HostConn(
             HostAction(
-              HostConnInfo("192.168.99.100",
+              Host("192.168.99.100",
               Some(2023),
               Some("test"),
               Some("test"),
@@ -183,7 +144,7 @@ object SshActionDef {
               HFix(
                 HostConn(
                   HostAction(
-                    HostConnInfo("192.168.99.100",
+                    Host("192.168.99.100",
                     Some(2023),
                     Some("test"),
                     Some("test"),

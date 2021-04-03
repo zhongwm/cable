@@ -55,7 +55,7 @@ class ExecSpec extends AnyWordSpec with Matchers {
 
   val simpleNestedTask = Parental(
     // JustConnect("192.168.99.100", Some(2022), Some("test"), Some("test")),
-    JustConnect("testHost1", password = Some("test")),
+    JustConnect("testHostJumped", password = Some("test")),
     Action("testHost2", password = Some("test"), action = scriptIO("hostname"))
   )
   val compoundSample =

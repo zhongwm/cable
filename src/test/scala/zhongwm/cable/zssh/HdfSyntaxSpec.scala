@@ -34,7 +34,10 @@ package zhongwm.cable.zssh
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.TryValues._
 import zhongwm.cable.zssh.hdfsyntax.HdfSyntax._
+
+import scala.util.Try
 
 class HdfSyntaxSpec extends AnyWordSpec with Matchers {
 
@@ -52,9 +55,9 @@ class HdfSyntaxSpec extends AnyWordSpec with Matchers {
   "Script2" when {
     "executed" should {
       "be ok" in {
-        val value = executeSshIO(script2)
-        pprint.pprintln(value)
-        value should not be null
+        val value = Try(executeSshIO(script2))
+        pprint.pprintln(value.success.value)
+        value.success.value should not be null
       }
     }
   }

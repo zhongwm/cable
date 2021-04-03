@@ -50,6 +50,7 @@ import org.slf4j.LoggerFactory
 import org.apache.sshd.scp.client.ScpClientCreator
 import org.apache.sshd.common.channel.PtyMode
 import zhongwm.cable.core.LogbackConfig
+import zhongwm.cable.zssh.TypeDef.Host
 import zio._
 import zio.blocking._
 import zio.console.{Console => ZConsole}
@@ -66,6 +67,8 @@ case class Zssh(
                privateKey: Option[KeyPair] = None
              ) {
   import Zssh.log
+
+  def this(host: Host) = this(Left(host.host, host.port.getOrElse(22)), host.username, host.password, host.privateKey)
 
   def mapToIOE[R, A](z: ZIO[R, Throwable, A]): ZIO[R, IOException, A] =
     z.mapError {
@@ -379,7 +382,7 @@ object Zssh {
           new IOException("Non-IOException made IOE", ex)
       }
       outS <- (ZIO.bracket(ZIO.succeed(setup)) { c =>
-          ZIO.effect {
+        ZIO.effect {
             if (log.isDebugEnabled) log.debug("Reclaiming io resources.")
             c._1.close()
           }.orElse(putStrLn("Closing channel encountered an error.")) *>
@@ -397,7 +400,7 @@ object Zssh {
         }.orElse(putStrLn("Flushing and Closing a PipedOutputStream encountered an error.")) *>
             ZIO.effect {
           c._5.close()
-        }.orElse(putStrLn("Closing a PipedInputStream encountered an error."))
+        }.orElse(putStrLn("Closing a PipedInputStream encountered an error."))  // May be reported type error due to bug of idea-scala plugin
       } { ct =>
         val c = ct._1
         val ss1 = Stream
@@ -415,14 +418,7 @@ object Zssh {
             IO.effect(if (log.isDebugEnabled) log.debug(s"output2: $v")).ignore *> UIO.succeed(v)
           }
         ss1.runCollect <*> ss2.runCollect // ss1.merge(ss2).runCollect
-      }).mapError {
-        case e: IOException =>
-          e
-        case t: Throwable =>
-          new IOException(t)
-        case a: Any =>
-          new IOException(s"Cause: `${a.getClass.getCanonicalName}`: $a")
-      }
+      })
       _ <- ZIO.effect{if (log.isDebugEnabled) log.debug("Begin receiving from streams")}.ignore *> mapToIOE(effectBlocking {
         if (log.isDebugEnabled) log.debug("Waiting for event.")
         setup._1.waitFor(
