@@ -30,7 +30,7 @@
 
 /* Written by Wenming Zhong */
 
-package zhongwm.cable.core
+package zhongwm.cable.util
 import java.io.ByteArrayInputStream
 
 import ch.qos.logback.classic.LoggerContext

@@ -36,15 +36,19 @@ import atto._
 import Atto._
 import atto.ParseResult.{Done, Fail, Partial}
 import cats.implicits._
-import zhongwm.cable.core.SshSecurityKey
+import zhongwm.cable.util.SshSecurityKey
 
 import java.nio.file.Paths
 import java.security.KeyPair
-import scala.util.{Failure, Success, Try, Using}
+import scala.util._
+import scala.concurrent.duration._
 
+/**
+ * Possible extensions in future.
+ *
+ * eg: Proxy host only by name as. `case class ProxyHostByName(name: String) extends ProxySetting`
+ */
 sealed trait ProxySetting
-
-case class ProxyHostByName(name: String) extends ProxySetting
 
 case class HostItem(
   name: String,
@@ -53,7 +57,8 @@ case class HostItem(
   username: Option[String],
   password: Option[String],
   privateKey: Option[KeyPair],
-  proxyJumper: Option[ProxySetting]
+  proxyJumper: Option[ProxySetting],
+  connectionTimeout: Option[Duration],
 ) extends ProxySetting
 
 case class SshConfigItemAttr(attrName: String, attrValue: String)
@@ -65,7 +70,7 @@ case class SshConfigRegistry(hostItems: Map[String, HostItem])
 
 class ParseSshConfigFailed(msg: String) extends RuntimeException(msg)
 
-trait SshConfigParser extends CommonParsers {
+trait SshConfigParser extends CommonParsers with ProxyCommandParser {
   val hostTitleLineP = (string("Host ") ~> many(either(letterOrDigit, oneOf("-_."))) <~ many(
     horizontalWhitespace
   ) <~ either(char('\n'), endOfInput)).map(_.map(_.fold(a => a, b => b)).mkString)
@@ -75,7 +80,7 @@ trait SshConfigParser extends CommonParsers {
     _         <- skipMany1(spaceOrTab)
     attrValue <- nonEmptyStrTillEndP
   } yield SshConfigItemAttr(
-    (attrName._1 :: attrName._2.map(_.fold(a => a, b => b))).mkString_(""),
+    (attrName._1 :: attrName._2).mkString_(""),
     attrValue.mkString.trim
   )
 
@@ -109,6 +114,7 @@ trait SshConfigParser extends CommonParsers {
       var port: Option[Int]                  = None
       var identityFile: Try[Option[KeyPair]] = Success(None)
       var proxy: Try[Option[ProxySetting]]   = Success(None)
+      var connTimeout: Try[Option[Duration]] = Success(None)
       i.attrs.foreach { a =>
         a.attrName match {
           case "User" =>
@@ -122,15 +128,17 @@ trait SshConfigParser extends CommonParsers {
           case "ProxyCommand" =>
             proxy = ProxyCommandParser.parseProxyCommand(a.attrValue).map(Some.apply)
           case "ProxyJump" =>
-            proxy = Success(ProxyHostByName(a.attrValue)).map(Some.apply)
+            proxy = parseProxyJumper(a.attrValue).map(Some.apply)
+          case "ConnectTimeout" =>
+            connTimeout = if (a.attrValue.nonEmpty) Try{a.attrValue.toInt.seconds}.map(Some.apply) else connTimeout
           case _ =>
-          // ignore
+          // ignore other options
         }
       }
-      (identityFile, proxy).mapN { (identityFileV, proxyV) =>
-        HostItem(i.name, host, port, username, None, identityFileV, proxyV)
+      (identityFile, proxy, connTimeout).mapN { (identityFileV, proxyV, timeoutV) =>
+        HostItem(i.name, host, port, username, None, identityFileV, proxyV, timeoutV)
       }
-    } // .traverse(identity)   // Uncomment to get the whole as try.
+    }
   
   def buildConfigRegistry(): Try[SshConfigRegistry] = {
     parseUserSshConfig().flatMap(in =>

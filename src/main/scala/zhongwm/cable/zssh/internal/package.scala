@@ -32,4 +32,4 @@
 
 package zhongwm.cable.zssh
 
-package object internal extends ZsshContextInternal {}
+package object internal extends ZsshContextInternal

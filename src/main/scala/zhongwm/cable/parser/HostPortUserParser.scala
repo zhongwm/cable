@@ -30,25 +30,51 @@
 
 /* Written by Wenming Zhong */
 
-package zhongwm.cable.core
+package zhongwm.cable.parser
 
-import io.github.zhongwm.commons.securityio._
-import java.security.KeyPair
-
-import java.nio.file.Paths
+import atto._
+import Atto._
+import cats.implicits._
+import atto.ParseResult.{Done, Fail, Partial}
 import scala.util._
-import scala.io._
 
-trait SshSecurityKey {
-  def loadSshKeyPair(f: String = SshSecurityKey.defaultSshPrivateKeyPath): Try[KeyPair] = {
-    Using(Source.fromFile(Paths.get(sys.props("user.home"), ".ssh", "id_rsa.pub").toFile)) { source =>
-      val publicKey = SshRsaPublicKeyReader.parseSshRsaPublicKey(source.mkString)
-      val privateKeyReader = new PrivateKeyReader(f.replaceFirst("~", sys.props("user.home")))
-      new KeyPair(publicKey, privateKeyReader.getPrivateKey)
-    }
-  }
+class InvalidHostPortUserFormat(msg: String) extends RuntimeException(msg)
+
+case class HostPortUser(username: Option[String], host: String, port: Option[Int]) {
+  override def toString = username.map(_ ++ "@").getOrElse("") ++ host ++ port.map(":" ++ _.toString).getOrElse("")
 }
 
-object SshSecurityKey extends SshSecurityKey {
-  val defaultSshPrivateKeyPath = Paths.get(sys.props("user.home"), ".ssh", "id_rsa").toFile.getAbsolutePath
+trait HostPortUserParser extends CommonParsers {
+  def hostPortUserP = for {
+    username <- opt(identifierP.map(_.mkString_("")) <~ char('@'))
+    hostName <- identifierP.map(_.mkString_(""))
+    port <- opt(char(':') ~> int)
+  } yield HostPortUser(username, hostName, port)
+
+  /**
+   * Many and least 1 hence multi1.
+   *
+   * Comma separated goes into a hierarchy.
+   */
+  def multi1HostPortUserP =
+    many1(hostPortUserP <~ opt(char(',') ~> many(horizontalWhitespace)))
+
+  def multi1HostPortUserAsProxyJumperP = multi1HostPortUserP map {
+    _.foldLeft(None: Option[HostItem])((acc, i) => Some(HostItem(i.host, None, i.port, i.username, None, None, acc, None))).get
+  }
+
+  private def parse0[A](p: Parser[A], in: String) = p.parseOnly(in) match {
+    case Done(_, r) =>
+      Success(r)
+    case Fail(i, s, m) =>
+      Failure(new InvalidProxyCommandFormat(s"Invalid ProxyJumper format: $i"))
+    case Partial(k) =>
+      Failure(new InvalidProxyCommandFormat("Invalid ProxyJummper format"))
+  }
+
+  def parseMulti1HostPortUserPort(in: String) =
+    parse0(multi1HostPortUserP, in)
+
+  def parseProxyJumper(in: String) =
+    parse0(multi1HostPortUserAsProxyJumperP, in)
 }

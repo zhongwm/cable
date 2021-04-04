@@ -30,36 +30,38 @@
  * by Zhongwenming<br>
  */
 
-package zhongwm.cable.defs
+package zhongwm.cable.parser
 
+import zhongwm.cable.parser.RemoteActionFileDefs._
+import zio.console._
+import zio.test.Assertion._
 import zio.test._
-import Assertion._
-import cats.implicits._
-import HigherGroupHostDefSuite.higherGroupHostDefsSpec
 
-object HigherGroupHostDefSuite {
-  import zhongwm.cable.parser.HigherGroupHosts._
-  private[defs] val higherGroupHostDefsSpec = suite("highergrouphost with env ") {
-    test("envGroupHostAttrs should be full cfg") {
-      val intermediate = for {
-      e <- envGroupHostAttrs
+object InilexTest {
+  val inventoryFiles = "ansible_playbooks/BACKUP_hostsfile_128_45.yml" ::
+    "ansible_playbooks/BACKUP_hostsfile_8_110.yml" :: Nil
 
-      } yield {e._1.toList.map{_.isLower}}
-      val thatValue = envGroupHostAttrs("ansible_become")
-      println(thatValue)
-      assert(intermediate.toList.flatten.exists(_ === false))(isTrue) &&
-      assert(envGroupHostAttrs.size)(isGreaterThanEqualTo(10)) &&
-        assert{thatValue.get.isInstanceOf[Boolean]}(isTrue) &&
-        assert(thatValue.get.asInstanceOf[Boolean])(isFalse) &&
-      assert(envGroupHostAttrs("ansible_port").get.isInstanceOf[Int])(isTrue) &&
-      assert(envGroupHostAttrs("ansible_port").get.asInstanceOf[Int])(equalTo(22)) &&
-      assert(envGroupHostAttrs.getOrElse("ansible_any", "NotAKey").asInstanceOf[String])(equalTo("NotAKey"))
-    }
-  }
+  val inilexSuite = suite("inilex") (
+    inventoryFiles.map { f =>
+      testM(s"parsing a normal inventory ini file $f should be get some groups and hosts") {
+        assertM(readInventoryFile(getClass.getClassLoader.getResource(f).getFile))(hasField("groupName", (ag: AGroup) => ag.groupName, equalTo("all")))
+      }
+    }: _*
+  )
+
+  val inilexSuite2 = suite("inilexWithInspect")(
+    inventoryFiles.map {f =>
+      testM(s"Parsing a normal inventory ini file $f should return some meaningful groups") {
+        for {
+        ag <- readInventoryFile(getClass.getClassLoader.getResource(f).getFile)
+        _ <-  putStrLn(pprint.tokenize(ag).mkString)
+        } yield assert(ag.groupName)(equalTo("all"))
+      }
+    }: _*
+  )
 }
 
-object HigherGroupHostSuiteGroup extends DefaultRunnableSpec {
-  override def spec = suite("all")(higherGroupHostDefsSpec)
+object AllSuites extends DefaultRunnableSpec {
+  import InilexTest._
+  def spec = suite("All tests")(inilexSuite, inilexSuite2)
 }
-
-

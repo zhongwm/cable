@@ -75,25 +75,24 @@ class ExecSpec extends AnyWordSpec with Matchers {
       Some(2022),
       Some("test"),
       Some("test"),
-      None,
-      Zssh.scriptIO("hostname") *> Zssh.scriptIO("echo /etc/issue"),
-      ssh(
+      factName = Some("versionOfLinux"),
+      action = Zssh.scriptIO("hostname") *> Zssh.scriptIO("echo /etc/issue"),
+      children = ssh(
         "192.168.99.100",
         Some(2023),
         Some("test"),
         Some("test"),
-        None,
-        Zssh.scpUploadIO("build.sbt") *> Zssh.scpDownloadIO("/etc/issue"),
-        HCNil
+        factName = Some("versionOfLinuxOf2ndHost"),
+        action = Zssh.scpUploadIO("build.sbt") *> Zssh.scpDownloadIO("/etc/issue"),
+        children = HCNil
       ) +:
         ssh(
           "192.168.99.100",
           Some(2023),
           Some("test"),
           Some("test"),
-          None,
-          Zssh.scpUploadIO("build.sbt") *> Zssh.scpDownloadIO("/etc/issue"),
-          HCNil
+          action = Zssh.scpUploadIO("build.sbt") *> Zssh.scpDownloadIO("/etc/issue"),
+          children = HCNil
         )
     )
 

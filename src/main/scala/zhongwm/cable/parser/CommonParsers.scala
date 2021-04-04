@@ -40,11 +40,10 @@ trait CommonParsers {
   val nonEmptyStrTillEndP =
     many(charRange(32.toChar to 126.toChar)) <~ either(char('\n'), endOfChunk)
   val horizontalNonQuotedNonWhitespace = charRange(33.toChar to 126.toChar)
-  val identifierP = many1(either(letterOrDigit, oneOf("-_.")))
+  val identifierP = many1(either(letterOrDigit, oneOf("-_."))).map(_.map(_.fold(a=>a, b=>b)))
   val lineComment             = skipMany(horizontalWhitespace) ~> char('#') <~ many(notChar('\n')) <~ char('\n')
   val emptyLineP              = skipMany(horizontalWhitespace) <~ char('\n')
   val emptyOrJustCommentLineP = either(emptyLineP, lineComment)
   val spaceOrTab              = many1(either(spaceChar, char('\t')))
 
 }
-

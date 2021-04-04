@@ -30,14 +30,15 @@
  * by Zhongwenming<br>
  */
 
-package zhongwm.cable.defs
-import zhongwm.cable.parser.Defs.IniLex._
-import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.matchers.should
-import zhongwm.cable.parser.Defs.PRGroup
-import pprint.{log=>println}
+package zhongwm.cable.parser
 
-class DefsSpec extends AnyWordSpec with should.Matchers {
+import org.scalatest.matchers.should
+import org.scalatest.wordspec.AnyWordSpec
+import pprint.{log => println}
+import zhongwm.cable.parser.RemoteActionFileDefs.IniLex._
+import zhongwm.cable.parser.RemoteActionFileDefs.PRGroup
+
+class RemoteActionDefsSpec extends AnyWordSpec with should.Matchers {
   private val value1  = "[Group1]"
   private val value2 = "[Group1_nx:vars]"
 

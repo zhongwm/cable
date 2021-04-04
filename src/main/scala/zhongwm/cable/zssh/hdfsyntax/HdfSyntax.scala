@@ -138,7 +138,7 @@ object HdfSyntax {
   val inspection: HAlg[HostConn, Inspect] = new HAlg[HostConn, Inspect] {
     override def apply[A](fa: HostConn[Inspect, A]): Inspect[A] = {
       val current = fa.hc match {
-        case HostAction(Host(ho, port, _, _, _), action) =>
+        case HostAction(Host(ho, port, _, _, _, _), action) =>
           action match {
             case SshAction(_) =>
               val rv = s"script in $ho:$port"
@@ -149,7 +149,7 @@ object HdfSyntax {
               println(rv)
               rv
           }
-        case HostNop(Host(ho, port, _, _, _)) =>
+        case HostNop(Host(ho, port, _, _, _, _)) =>
           val rv = s"Just connect $ho:$port"
           println(rv)
           rv

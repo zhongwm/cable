@@ -36,6 +36,7 @@ import zhongwm.cable.zssh.Zssh.types._
 import cats.~>
 import zhongwm.cable.zssh.TypeDef.Host
 import zhongwm.cable.zssh.TAction
+import scala.concurrent.duration._
 
 object Hdf {
 
@@ -60,12 +61,12 @@ object Hdf {
   case class HCFix[F[_[+_], +_, +_], C, +A](unfix: F[HCFix[F, C, +*], C, A])
   case class HCDFix[F[_[+_, +_], +_, +_], +C, +A](unfix: F[λ[(+[C], +[D]) => HCDFix[F, C, D]], C, A])
 
-  def ssh[A](host: String, port: Option[Int]=None, username: Option[String]=None, password: Option[String]=None, privateKey: Option[KeyPair]=None, action: Option[TAction[A]]=None, children: Seq[HFix[HostConn, _]]=Nil): HFix[HostConn, A] = {
+  def ssh[A](host: String, port: Option[Int]=None, username: Option[String]=None, password: Option[String]=None, privateKey: Option[KeyPair]=None, connectionTimeout: Option[Duration] = None, action: Option[TAction[A]]=None, children: Seq[HFix[HostConn, _]]=Nil): HFix[HostConn, A] = {
     action match {
       case None =>
-        HFix(HostConn(HostNop(Host(host, port, username, password, privateKey)), children.toList))
+        HFix(HostConn(HostNop(Host(host, port, username, password, privateKey, connectionTimeout)), children.toList))
       case Some(taction) =>
-        HFix(HostConn(HostAction(Host(host, port, username, password, privateKey), taction), children.toList))
+        HFix(HostConn(HostAction(Host(host, port, username, password, privateKey, connectionTimeout), taction), children.toList))
     }
   }
 

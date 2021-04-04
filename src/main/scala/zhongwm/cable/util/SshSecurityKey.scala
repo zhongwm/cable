@@ -26,41 +26,29 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- *
- * by Zhongwenming<br>
  */
 
-package zhongwm.cable.defs
-import zhongwm.cable.parser.Defs._
-import zio.test._
-import zio.console._
-import Assertion._
+/* Written by Wenming Zhong */
 
-object InilexTest {
-  private val inventoryFiles = "ansible_playbooks/BACKUP_hostsfile_128_45.yml" ::
-    "ansible_playbooks/BACKUP_hostsfile_8_110.yml" :: Nil
+package zhongwm.cable.util
 
-  private[defs] val inilexSuite = suite("inilex") (
-    inventoryFiles.map { f =>
-      testM(s"parsing a normal inventory ini file $f should be get some groups and hosts") {
-        assertM(readInventoryFile(getClass.getClassLoader.getResource(f).getFile))(hasField("groupName", (ag: AGroup) => ag.groupName, equalTo("all")))
-      }
-    }: _*
-  )
+import io.github.zhongwm.commons.securityio._
+import java.security.KeyPair
 
-  private[defs] val  inilexSuite2 = suite("inilexWithInspect")(
-    inventoryFiles.map {f =>
-      testM(s"Parsing a normal inventory ini file $f should return some meaningful groups") {
-        for {
-        ag <- readInventoryFile(getClass.getClassLoader.getResource(f).getFile)
-        _ <-  putStrLn(pprint.tokenize(ag).mkString)
-        } yield assert(ag.groupName)(equalTo("all"))
-      }
-    }: _*
-  )
+import java.nio.file.Paths
+import scala.util._
+import scala.io._
+
+trait SshSecurityKey {
+  def loadSshKeyPair(f: String = SshSecurityKey.defaultSshPrivateKeyPath): Try[KeyPair] = {
+    Using(Source.fromFile(Paths.get(sys.props("user.home"), ".ssh", "id_rsa.pub").toFile)) { source =>
+      val publicKey = SshRsaPublicKeyReader.parseSshRsaPublicKey(source.mkString)
+      val privateKeyReader = new PrivateKeyReader(f.replaceFirst("~", sys.props("user.home")))
+      new KeyPair(publicKey, privateKeyReader.getPrivateKey)
+    }
+  }
 }
 
-object AllSuites extends DefaultRunnableSpec {
-  import InilexTest._
-  def spec = suite("All tests")(inilexSuite, inilexSuite2)
+object SshSecurityKey extends SshSecurityKey {
+  lazy val defaultSshPrivateKeyPath = Paths.get(sys.props("user.home"), ".ssh", "id_rsa").toFile.getAbsolutePath
 }

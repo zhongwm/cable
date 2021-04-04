@@ -37,8 +37,9 @@ import zhongwm.cable.zssh.Zssh.{jumpSessionL, sessionL}
 import zhongwm.cable.zssh.Zssh.types._
 import zhongwm.cable.zssh.internal.ZsshContextInternal
 import cats.implicits._
+import scala.concurrent.duration._
 import scala.util._
-import zhongwm.cable.parser.{HostItem, ProxyHostByName, ProxySetting, SshConfigParser}
+import zhongwm.cable.parser.{HostItem, ProxySetting, SshConfigParser}
 import zio.Runtime
 
 object TypeDef {
@@ -48,6 +49,7 @@ object TypeDef {
                   username: Option[String] = None,
                   password: Option[String] = None,
                   privateKey: Option[KeyPair] = None,
+                  connectionTimeout: Option[Duration] = None
                   )
 
   case class Nested[+Parent, +Child](parent: Parent, child: Child)
@@ -82,19 +84,15 @@ object TypeDef {
 
   private[cable] def deriveParentSessionFromSshConfig(proxySetting: ProxySetting): Option[SessionLayer] = {
     proxySetting match {
-      case ProxyHostByName(name) =>
-        configRegistry.flatMap(_.hostItems.get(name)).flatMap(_.proxyJumper).flatMap(deriveParentSessionFromSshConfig)
-      case HostItem(name, hostName, port, username, password, privateKey, proxyJumper) =>
+      case HostItem(name, hostName, port, username, password, privateKey, proxyJumper, connectionTimeout) =>
+        val defaulted = respectSshConfig(Host(name, port, username, password, privateKey, connectionTimeout))
         proxyJumper.flatMap {
-          case ps@ProxyHostByName(_) =>
+          case ps: HostItem =>
             deriveParentSessionFromSshConfig(ps)
-          case _ =>
-            // Not gonna happen as we know for sure from the form of the ProxyCommand, and we've parsed it.
-            None
         }.fold {
-          (hostName, port.orElse(Some(22))).mapN((h, p) => sessionL(Left(h, p), username, password, privateKey))
+          (Some(defaulted.host), defaulted.port.orElse(Some(22))).mapN((h, p) => sessionL(Left(h, p), defaulted.username, defaulted.password, defaulted.privateKey, defaulted.connectionTimeout))
         } { pl =>
-          (hostName, port.orElse(Some(22))).mapN((h, p) => jumpSessionL(pl, h, p, username, password, privateKey))
+          (Some(defaulted.host), defaulted.port.orElse(Some(22))).mapN((h, p) => jumpSessionL(pl, h, p, defaulted.username, defaulted.password, defaulted.privateKey, defaulted.connectionTimeout))
         }
     }
   }
@@ -106,10 +104,10 @@ object TypeDef {
   def layerForHostConnInfo(hc: Host): SessionLayer =
     getConfiguredProxySetting(hc.host).flatMap(deriveParentSessionFromSshConfig).fold {
       val defaultedHost = respectSshConfig(hc)
-      sessionL(defaultedHost.host, defaultedHost.port.getOrElse(22), defaultedHost.username, defaultedHost.password, defaultedHost.privateKey)
+      sessionL(defaultedHost.host, defaultedHost.port.getOrElse(22), defaultedHost.username, defaultedHost.password, defaultedHost.privateKey, defaultedHost.connectionTimeout)
     } { pl =>
       val defaultedHost = respectSshConfig(hc)
-      jumpSessionL(pl, defaultedHost.host, defaultedHost.port.getOrElse(22), defaultedHost.username, defaultedHost.password, defaultedHost.privateKey)
+      jumpSessionL(pl, defaultedHost.host, defaultedHost.port.getOrElse(22), defaultedHost.username, defaultedHost.password, defaultedHost.privateKey, defaultedHost.connectionTimeout)
     }
 
   protected[zssh] def deriveSessionLayer(p: Option[SessionLayer], hc: Host): SessionLayer =
@@ -197,10 +195,10 @@ object TypeDef {
     }
 
     object Action {
-      def apply[A](ho: String, port: Option[Int] = None, username: Option[String] = None, password: Option[String] = None, privateKey: Option[KeyPair] = None, action: SshIO[A]): Action[A] =
-        Action(Host(ho, port, username, password, privateKey), SshAction(action))
-      def asFact[A](ho: String, port: Option[Int] = None, username: Option[String] = None, password: Option[String] = None, privateKey: Option[KeyPair] = None, factName: String, action: SshIO[A]): Action[A] =
-        Action(Host(ho, port, username, password, privateKey), FactAction(factName, action))
+      def apply[A](ho: String, port: Option[Int] = None, username: Option[String] = None, password: Option[String] = None, privateKey: Option[KeyPair] = None, connectionTimeout: Option[Duration] = None, action: SshIO[A]): Action[A] =
+        Action(Host(ho, port, username, password, privateKey, connectionTimeout), SshAction(action))
+      def asFact[A](ho: String, port: Option[Int] = None, username: Option[String] = None, password: Option[String] = None, privateKey: Option[KeyPair] = None, connectionTimeout: Option[Duration] = None, factName: String, action: SshIO[A]): Action[A] =
+        Action(Host(ho, port, username, password, privateKey, connectionTimeout), FactAction(factName, action))
     }
 
     sealed trait HCNil extends HostConnS[Unit] {
@@ -216,16 +214,13 @@ object TypeDef {
 
     object HCNil extends HCNil
 
-    def ssh[A, S <: HostConnS[A], B](host: String, port: Option[Int], username: Option[String], password: Option[String], privateKey: Option[KeyPair], action: SshIO[A], children: HostConnS[B]) = {
-      Parental(Action(Host(host, port, username, password, privateKey), SshAction(action)), children)
-    }
-
-    def ssh[A, S <: HostConnS[A], B](host: String, port: Option[Int], username: Option[String], password: Option[String], privateKey: Option[KeyPair], factName: String, action: SshIO[A], children: HostConnS[B]) = {
-      Parental(Action(Host(host, port, username, password, privateKey), FactAction(factName, action)), children)
-    }
-
-    def ssh[A, S <: HostConnS[A], B](host: String, port: Option[Int], username: Option[String], password: Option[String], privateKey: Option[KeyPair], children: HostConnS[B]) = {
-      Parental(JustConnect(Host(host, port, username, password, privateKey)), children)
+    def ssh[A, S <: HostConnS[A], B](host: String, port: Option[Int] = None, username: Option[String] = None, password: Option[String] = None, privateKey: Option[KeyPair] = None, connectionTimeout: Option[Duration] = None, factName: Option[String] = None, action: SshIO[A], children: HostConnS[B]) = {
+      Parental(Action(Host(host, port, username, password, privateKey, connectionTimeout), factName match {
+        case Some(factNameV) =>
+          FactAction(factNameV, action)
+        case None =>
+          SshAction(action)
+      }), children)
     }
 
   }

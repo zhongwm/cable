@@ -30,8 +30,35 @@
  * by Zhongwenming<br>
  */
 
-package zhongwm.cable
+package zhongwm.cable.parser
 
-package object zssh {
+import cats.implicits._
+import zio.test.Assertion._
+import zio.test._
 
+object GroupHostDefSuite {
+  import zhongwm.cable.parser.RemoteGroupHosts._
+  val higherGroupHostDefsSpec = suite("highergrouphost with env ") {
+    test("envGroupHostAttrs should be full cfg") {
+      val intermediate = for {
+      e <- envGroupHostAttrs
+
+      } yield {e._1.toList.map{_.isLower}}
+      val thatValue = envGroupHostAttrs("ansible_become")
+      println(thatValue)
+      assert(intermediate.toList.flatten.exists(_ === false))(isTrue) &&
+      assert(envGroupHostAttrs.size)(isGreaterThanEqualTo(10)) &&
+        assert{thatValue.get.isInstanceOf[Boolean]}(isTrue) &&
+        assert(thatValue.get.asInstanceOf[Boolean])(isFalse) &&
+      assert(envGroupHostAttrs("ansible_port").get.isInstanceOf[Int])(isTrue) &&
+      assert(envGroupHostAttrs("ansible_port").get.asInstanceOf[Int])(equalTo(22)) &&
+      assert(envGroupHostAttrs.getOrElse("ansible_any", "NotAKey").asInstanceOf[String])(equalTo("NotAKey"))
+    }
+  }
 }
+
+object HigherGroupHostSuiteGroup extends DefaultRunnableSpec {
+  override def spec = suite("all")(GroupHostDefSuite.higherGroupHostDefsSpec)
+}
+
+

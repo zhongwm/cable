@@ -37,14 +37,13 @@ import Atto._
 import cats.implicits._
 import ShellUtils.stripeQuotedString
 import atto.ParseResult.{Done, Fail, Partial}
-import zhongwm.cable.core.SshSecurityKey
+import zhongwm.cable.util.SshSecurityKey
 
 import scala.util._
 
-class ProxyCommandParseFailed(msg: String) extends RuntimeException(msg)
+class InvalidProxyCommandFormat(msg: String) extends RuntimeException(msg)
 
-trait ProxyCommandParser extends CommonParsers {
-  // ProxyCommand sshpass -p 'proxyaw354w^&%pas_-od' ssh -q -vN -l 18612341234 -W %h:%p -p 2022 192.168.100.12
+trait ProxyCommandParser extends CommonParsers with HostPortUserParser {
 
   val cmdSegmentsP: Parser[List[String]] = for {
     words <- many(choice(many1(horizontalNonQuotedNonWhitespace).map(_.toList), singleQuotedStringP, doubleQuotedStringP) <~ many(horizontalWhitespace))
@@ -82,13 +81,13 @@ trait ProxyCommandParser extends CommonParsers {
       case Done(_, rst) =>
         cmdSegmentsToSshConfigHostItems(rst)
       case Fail(_, _, msg) =>
-        Failure(new ProxyCommandParseFailed(msg))
+        Failure(new InvalidProxyCommandFormat(msg))
       case Partial(k) =>
-        Failure(new ProxyCommandParseFailed("Should not happen, all input are fed."))
+        Failure(new InvalidProxyCommandFormat("Should not happen, all input are fed."))
     }
   }
 
-  def cmdSegmentsToSshConfigHostItems(in: Seq[String], state:String="", acc:Try[HostItem]=Success(HostItem("", None, None, None, None, None, None))): Try[HostItem] = {
+  def cmdSegmentsToSshConfigHostItems(in: Seq[String], state:String="", acc:Try[HostItem]=Success(HostItem("", None, None, None, None, None, None, None))): Try[HostItem] = {
     in match {
       case s :: ss =>
         state match {
@@ -97,15 +96,17 @@ trait ProxyCommandParser extends CommonParsers {
           case "-p" =>
             cmdSegmentsToSshConfigHostItems(ss, "", (acc, Try{s.toInt}).mapN((ac, iv) => ac.copy(port=Some(iv))))
           case "-J" =>
-            val indexOfLastAtSign = s.lastIndexOf('@')
+            cmdSegmentsToSshConfigHostItems(ss, "",
+              (acc, parseProxyJumper(s)).mapN((ac, pj) => ac.copy(proxyJumper = Some(pj))))
+            /* val indexOfLastAtSign = s.lastIndexOf('@')
             if (indexOfLastAtSign > 0
               && indexOfLastAtSign < s.length - 1) {
               val un = s.substring(0, indexOfLastAtSign)
               val hn = s.substring(indexOfLastAtSign + 1)
-              cmdSegmentsToSshConfigHostItems(ss, "", acc.map(_.copy(proxyJumper = Some(HostItem(hn, Some(hn), None, Some(un), None, None, None)))))
+              cmdSegmentsToSshConfigHostItems(ss, "", acc.map(_.copy(proxyJumper = Some(HostItem(hn, Some(hn), None, Some(un), None, None, None, None)))))
             } else {
               cmdSegmentsToSshConfigHostItems(ss, "", acc.map(_.copy(proxyJumper = Some(ProxyHostByName(s)))))
-            }
+            }*/
           case "-pp" =>
             cmdSegmentsToSshConfigHostItems(ss, "", (acc, stripeQuotedString(s)).mapN((ac, ts) => ac.copy(password=Some(ts))))
           case "-pe" =>
@@ -165,7 +166,6 @@ trait ProxyCommandParser extends CommonParsers {
                 cmdSegmentsToSshConfigHostItems(ss, "", acc.map(_.copy(hostName=Some(hostSegment))))
               case _ =>
                 Failure(new RuntimeException("shouldNotHappen"))
-                // cmdSegmentsToSshConfigHostItems(ss, "", acc)
             }
           case _ =>
             Failure(new RuntimeException("shouldNotHappen, mark 2"))

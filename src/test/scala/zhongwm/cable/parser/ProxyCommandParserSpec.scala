@@ -58,17 +58,15 @@ class ProxyCommandParserSpec extends AnyFlatSpec with Matchers {
           val sshConfigHostItem = cmdSegmentsToSshConfigHostItems(rst)
           sshConfigHostItem.success.value.privateKey.isDefined should be (true)
           sshConfigHostItem.success.value match {
-            case HostItem(name, hostName, port, username, password, privateKey, proxyJumper) =>
+            case HostItem(name, hostName, port, username, password, privateKey, proxyJumper, connectionTimeout) =>
               name should be ("192.168.100.12")
               hostName.value should be (name)
               port.value should be (2022)
               password.value should be ("proxyaw354w^&%pas_-od")
               privateKey.isDefined should be (true)
               proxyJumper.value match {
-                case HostItem(name, hostName, port, username, password, privateKey, proxyJumper) =>
-                  fail("inner jumper not parsed correctly")
-                case ProxyHostByName(nm) =>
-                  nm should be ("ms")
+                case HostItem(name, hostName, port, username, password, privateKey, proxyJumper, connectionTimeout) =>
+                  name should be ("ms")
               }
           }
         case Fail(input, stack, message) =>

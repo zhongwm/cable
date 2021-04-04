@@ -33,13 +33,13 @@
 package zhongwm.cable.parser
 import cats._
 import cats.implicits._
-import zhongwm.cable.parser.Defs.{AGroup, AHost}
+import zhongwm.cable.parser.RemoteActionFileDefs.{AGroup, AHost}
 
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
-object HigherGroupHosts {
+object RemoteGroupHosts {
   val TOP_GROUP_NAME = "all"
 
   val predefinedAHostAttrs: Map[String, Option[Any]] = Map(

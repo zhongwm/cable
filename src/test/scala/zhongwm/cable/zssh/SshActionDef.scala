@@ -47,14 +47,13 @@ object SshActionDef {
       Some("test"),
       privateKey = None,
       None,  // Or you can do something on the bastion host by saying: Some(SshAction(Zssh.scpDownloadIO("/etc/issue") *> Zssh.scriptIO("uname -r") *> Zssh.scriptIO("hostname"))
-      Seq(ssh(
+      children = Seq(ssh(
         "192.168.99.100",
         Some(2023),
         Some("test"),
         Some("test"),
         None,
-        Some(SshAction(Zssh.scpDownloadIO("/etc/issue") *> Zssh.scriptIO("ls /"))),  // Could be set to None to opt out doing anything.
-        Nil
+        action = Some(SshAction(Zssh.scpDownloadIO("/etc/issue") *> Zssh.scriptIO("ls /"))),  // Could be set to None to opt out doing anything.
       ))
     )
 
@@ -64,25 +63,20 @@ object SshActionDef {
       Some(2022),
       Some("test"),
       Some("test"),
-      None,
-      Some(FactAction("hostNameOfA", Zssh.scpDownloadIO("/etc/issue") *> Zssh.scriptIO("uname -r") *> Zssh.scriptIO("hostname"))),
-      Seq(ssh(
+      action = Some(FactAction("hostNameOfA", Zssh.scpDownloadIO("/etc/issue") *> Zssh.scriptIO("uname -r") *> Zssh.scriptIO("hostname"))),
+      children = Seq(ssh(
         "192.168.99.100",
         Some(2023),
         Some("test"),
         Some("test"),
-        None,
-        Some(FactAction("just echoing last fact", Zssh.sshIoFromFactsM(d=>Zssh.scriptIO(s"echo Displaying fact value: ${d("hostNameOfA")}, current host: `hostname`")))),  // Could be set to None to opt out doing anything.
-        Nil
+        action = Some(FactAction("just echoing last fact", Zssh.sshIoFromFactsM(d=>Zssh.scriptIO(s"echo Displaying fact value: ${d("hostNameOfA")}, current host: `hostname`")))),  // Could be set to None to opt out doing anything.
       ),
       ssh(
         "192.168.99.100",
         Some(2023),
         Some("test"),
         Some("test"),
-        None,
-        Some(FactAction("Chained at same level", Zssh.sshIoFromFactsM(d=>Zssh.scriptIO(s"echo What we got: ${d("just echoing last fact")}")))),  // Could be set to None to opt out doing anything.
-        Nil
+        action = Some(FactAction("Chained at same level", Zssh.sshIoFromFactsM(d=>Zssh.scriptIO(s"echo What we got: ${d("just echoing last fact")}")))),  // Could be set to None to opt out doing anything.
       ),
       )
     )

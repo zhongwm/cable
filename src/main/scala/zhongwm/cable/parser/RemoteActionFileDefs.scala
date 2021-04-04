@@ -38,27 +38,23 @@ import Atto._
 import atto.ParseResult._
 import cats.implicits._
 
-import scala.annotation.{nowarn, tailrec}
+import scala.annotation.tailrec
 import scala.io.Source
 
-object Defs {
-  case class AInventory()
-
+object RemoteActionFileDefs {
   case class AGroup(groupName: String,
                     items: Map[String, AHost] = Map.empty,
                     attrs: Map[String, Option[Any]] = Map.empty,
                     parent: Option[AGroup] = None,
                     children: List[AGroup] = Nil)
 
-  case class AHost(name: String, attrs: Map[String, Option[Any]], parent:Option[AGroup]=None) {
-    // def attr[A](n: String): Option[A] = if (attrs.isDefinedAt(n) && attrs.get(n).isInstanceOf[Option[A]] ) attrs(n).asInstanceOf[Option[A]] else None
-  }
+  case class AHost(name: String, attrs: Map[String, Option[Any]], parent:Option[AGroup]=None)
 
   sealed trait PResult
   case class PRGroup(name: String, attrs: Map[String, Option[Any]]=Map.empty, items:Map[String, PRHostDef]=Map.empty) extends PResult
   case class PRHostDef(name: String, attrs: Map[String, Option[Any]]=Map.empty) extends PResult
 
-  case class ParseFailure[A](msg: String, maybeParseFail: Option[Fail[A]])// extends PResult
+  case class ParseFailure[A](msg: String, maybeParseFail: Option[Fail[A]])  // extends PResult
 
   /**
    * Ini style inventory file, flat groups.
@@ -76,7 +72,6 @@ object Defs {
     }
 
     @tailrec
-    @nowarn("msg=match may not be exhaustive")
     def parseGroup(acc: String, seq: String): (String, String) = {
       anyChar.parseOnly(seq) match {
         case Fail(in, _, msg) =>
@@ -87,6 +82,10 @@ object Defs {
           (acc, "")
         case Done(r, c) if c != ']' =>
           parseGroup(acc + c, r)
+        case Done(r, _) =>
+          (acc, "")
+        case Partial(k) =>
+          (acc, "")
       }
     }
 
@@ -110,7 +109,6 @@ object Defs {
      * @param l
      * @return
      */
-    @nowarn("msg=match may not be exhaustive")
     def parseGroupVarDef(l: String): Option[(String, Option[String])] = {
       many(notChar('=')).parse(l) match {
         case Partial(k) =>
@@ -121,29 +119,33 @@ object Defs {
               ""
             case Done(rr, cll) =>
               cll.mkString
+            case Partial(k) =>
+              ""
           }
           Some(cl.mkString -> value.some)
+        case Fail(i, s, m) =>
+          None
       }
     }
 
     @tailrec
-    @nowarn("msg=match may not be exhaustive")
     def parseGroupVarDefs(ll: List[String], pd:List[(String, Option[String])]=Nil): (List[String], List[(String, Option[String])]) = {
       ll match {
         case Nil =>
           (Nil, pd)
-        case l :: ls if isAGroupLine(l)._2 =>
-          (ls, pd)
-        case l :: ls if !isAGroupLine(l)._2 =>
-          val tryParsing = parseGroupVarDef(l).map{List(_)}
-          parseGroupVarDefs(ls,  pd.some.combine(tryParsing).getOrElse(Nil))
+        case l :: ls =>
+          if (isAGroupLine(l)._2)
+            (ls, pd)
+          else {
+            val tryParsing = parseGroupVarDef(l).map{List(_)}
+            parseGroupVarDefs(ls,  pd.some.combine(tryParsing).getOrElse(Nil))
+          }
       }
     }
 
 
     object HostLineP {
       @tailrec
-      @nowarn("msg=match may not be exhaustive")
       def parseVarDef[A](l: String, mm: Map[String, Option[String]]=Map.empty): Either[ParseFailure[A], (String, Map[String, Option[String]])] = {
         // println(l)
         val sl = many1(oneOf(" \t")).parseOnly(l) match {
@@ -151,16 +153,20 @@ object Defs {
             input
           case Fail(_, _, _) =>
             l
+          case Partial(k) =>
+            l
         }
         val (lr, k) = many1(noneOf("[]=")) <~ char('=') parseOnly sl match {
           case Done(input, result) =>
             (input, result.mkString_("").some)
           case Fail(input, stack, msg) =>
             (input, None)
+          case Partial(k) =>
+            (sl, None)
         }
         if (k.isEmpty) {
           // no key, v is not a failure, need more look
-          if (!sl.isEmpty) Left(ParseFailure(s"malformed vars def: $sl", None))
+          if (sl.nonEmpty) Left(ParseFailure(s"malformed vars def: $sl", None))
           else {
             // println("\t" + k)
             Right(lr, mm)
@@ -175,7 +181,6 @@ object Defs {
           }
 
           @tailrec
-          @nowarn("msg=match may not be exhaustive")
           def parseAval(in: String, vv: List[Char]=Nil): (String, List[Char]) = anyChar parseOnly in match {
             case Fail(input, stack, message) =>
               (input, vv)  // end
@@ -204,6 +209,8 @@ object Defs {
                 }
               }else
                 parseAval(input, result::vv)
+            case Partial(k) =>
+              (in, vv)
           }
 
           val (input, v) = parseAval(lr1)
@@ -212,7 +219,6 @@ object Defs {
         }
       }
 
-      @nowarn("msg=match may not be exhaustive")
       def parseHostLine[_](group: PRGroup, l: String): Either[ParseFailure[_], PRHostDef] =
         notChar('[') ~ many1(noneOf("[]= ")) parseOnly l match {
           case fail@Fail(input, stack, message) =>
@@ -225,6 +231,8 @@ object Defs {
             }, { b =>
               Right(PRHostDef((result._1 :: result._2).mkString_(""), b._2))
             })
+          case Partial(k) =>
+            Left(ParseFailure(s"Not valid host line: $l", None))
         }
     }
 
@@ -278,8 +286,8 @@ object Defs {
         ag = ag.copy(items=aHosts)
         ag
       }
-      var topGroupOpt = subGroups.find(_.groupName == HigherGroupHosts.TOP_GROUP_NAME)
-      var topGroup = if (topGroupOpt.isDefined) topGroupOpt.get else AGroup(HigherGroupHosts.TOP_GROUP_NAME)
+      var topGroupOpt = subGroups.find(_.groupName == RemoteGroupHosts.TOP_GROUP_NAME)
+      var topGroup = if (topGroupOpt.isDefined) topGroupOpt.get else AGroup(RemoteGroupHosts.TOP_GROUP_NAME)
       if (topGroupOpt.isEmpty) {
         subGroups = topGroup :: subGroups
       }

@@ -49,26 +49,25 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.apache.sshd.scp.client.ScpClientCreator
 import org.apache.sshd.common.channel.PtyMode
-import zhongwm.cable.core.LogbackConfig
+import zhongwm.cable.util.LogbackConfig
 import zhongwm.cable.zssh.TypeDef.Host
 import zio._
 import zio.blocking._
 import zio.console.{Console => ZConsole}
 import zio.console._
 import zio.stream._
-import zio.duration._
-
-import scala.io.Source
+import scala.concurrent.duration._
 
 case class Zssh(
                connInfo: Either[(String, Int), SshdSocketAddress],
                username: Option[String] = Some("root"),
                password: Option[String] = None,
-               privateKey: Option[KeyPair] = None
+               privateKey: Option[KeyPair] = None,
+               connectionTimeout: Option[Duration] = None
              ) {
   import Zssh.log
 
-  def this(host: Host) = this(Left(host.host, host.port.getOrElse(22)), host.username, host.password, host.privateKey)
+  def this(host: Host) = this(Left(host.host, host.port.getOrElse(22)), host.username, host.password, host.privateKey, host.connectionTimeout)
 
   def mapToIOE[R, A](z: ZIO[R, Throwable, A]): ZIO[R, IOException, A] =
     z.mapError {
@@ -89,7 +88,7 @@ case class Zssh(
             case Right(sock) =>
               _client.connect(username.getOrElse("root"), sock.toInetSocketAddress)
           }
-          val session = connFuture.verify(8000).getSession
+          val session = connFuture.verify(connectionTimeout.getOrElse(Zssh.defaultConnectionTimeout).toMillis).getSession
 
           password.foreach(session.addPasswordIdentity)
           privateKey.foreach(session.addPublicKeyIdentity)
@@ -127,7 +126,7 @@ case class Zssh(
             case Right(sock) =>
               _client.connect(username.getOrElse("root"), sock.toInetSocketAddress)
           }
-          val session = connFuture.verify(8000).getSession
+          val session = connFuture.verify(connectionTimeout.getOrElse(Zssh.defaultConnectionTimeout).toMillis).getSession
 
           password.foreach(session.addPasswordIdentity)
           privateKey.foreach(session.addPublicKeyIdentity)
@@ -146,6 +145,8 @@ object Zssh {
   LogbackConfig.configWarnLogbackForLib()
 
   val log = LoggerFactory.getLogger(s"${classOf[Zssh].getPackage.getName}.Zssh")
+
+  val defaultConnectionTimeout = 30.seconds
 
   object types {
 
@@ -212,10 +213,10 @@ object Zssh {
           ): UIO[Zssh] =
     IO.succeed(Zssh(addr, username, password, privateKey))
 
-  def sessionL(host: String, port: Int, username: Option[String] = Some("root"), password: Option[String], privateKey: Option[KeyPair] = None): ZLayer[Blocking, IOException, Has[ClientSession]] =
-    sessionL(Left(host, port), username, password, privateKey)
+  def sessionL(host: String, port: Int, username: Option[String] = Some("root"), password: Option[String], privateKey: Option[KeyPair] = None, connectionTimeout: Option[Duration]=None): ZLayer[Blocking, IOException, Has[ClientSession]] =
+    sessionL(Left(host, port), username, password, privateKey, connectionTimeout)
 
-  def sessionL(connInfo: Either[(String, Int), SshdSocketAddress], username: Option[String], password: Option[String], privateKey: Option[KeyPair]): ZLayer[Blocking, IOException, Has[ClientSession]] =
+  def sessionL(connInfo: Either[(String, Int), SshdSocketAddress], username: Option[String], password: Option[String], privateKey: Option[KeyPair], connectionTimeout: Option[Duration]): ZLayer[Blocking, IOException, Has[ClientSession]] =
     (clientLayer ++ Blocking.live) >>> ZLayer.fromAcquireRelease(ZIO.environment[Has[SshClient]] >>= { cli =>
       val sshConn = Zssh(connInfo, username, password, privateKey)
       effectBlocking {
@@ -226,7 +227,7 @@ object Zssh {
           case Right(sock) =>
             _client.connect(sshConn.username.getOrElse("root"), sock.toInetSocketAddress)
         }
-        val session = connFuture.verify(8000).getSession
+        val session = connFuture.verify(connectionTimeout.getOrElse(Zssh.defaultConnectionTimeout).toMillis).getSession
 
         sshConn.password.foreach(session.addPasswordIdentity)
         sshConn.privateKey.foreach(session.addPublicKeyIdentity)
@@ -256,7 +257,7 @@ object Zssh {
         case Right(sock) =>
           _client.connect(sshConn.username.getOrElse("root"), sock.toInetSocketAddress)
       }
-      val session = connFuture.verify(8000).getSession
+      val session = connFuture.verify(sshConn.connectionTimeout.getOrElse(Zssh.defaultConnectionTimeout).toMillis).getSession
 
       sshConn.password.foreach(session.addPasswordIdentity)
       sshConn.privateKey.foreach(session.addPublicKeyIdentity)
@@ -302,14 +303,15 @@ object Zssh {
         host: String, port: Int,
         username: Option[String] = None,
         password: Option[String] = None,
-        privateKey: Option[KeyPair] = None) =
+        privateKey: Option[KeyPair] = None,
+        connectionTimeout: Option[Duration] = None) =
     ((((Blocking.live ++ zl) >>> jumpAddressLayer(host, port) ++ Blocking.live) >>>
-      jumpSshConnL(username, password, privateKey)) ++ Blocking.live ++ clientLayer) >>>
+      jumpSshConnL(username, password, privateKey, connectionTimeout)) ++ Blocking.live ++ clientLayer) >>>
         sessionL
 
-  def jumpSshConnL(username: Option[String], password: Option[String] = None, privateKey: Option[KeyPair] = None) =
+  def jumpSshConnL(username: Option[String], password: Option[String] = None, privateKey: Option[KeyPair] = None, connectionTimeout: Option[Duration] = None) =
     ZLayer.fromService { a: SshdSocketAddress =>
-      Zssh(Right(a), username, password, privateKey)
+      Zssh(Right(a), username, password, privateKey, connectionTimeout)
     }
 
   def withJumpM[A](targetIp: String, targetPort: Int, jumpWork: ZIO[Has[SshdSocketAddress], IOException, A]) =
