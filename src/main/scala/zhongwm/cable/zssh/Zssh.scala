@@ -1,5 +1,5 @@
 /*
- * Copyright 2020, Wenming Zhong
+ * Copyright 2020-2021, Wenming Zhong
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -26,9 +26,9 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- *
- * by Zhongwenming<br>
  */
+
+/* Written by Wenming Zhong */
 
 package zhongwm.cable.zssh
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, FileInputStream, IOException, OutputStream, PipedInputStream, PipedOutputStream}
