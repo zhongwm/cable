@@ -1,13 +1,13 @@
 # A scala ssh client library
 
-## A ssh client lib that is Functional, Monadic
+## A SSH client lib that is Functional, Monadic
 
 It's scala, It's purely functional, monadic.
 
 ## Practical, Functionality rich
 
-At the same time, it's functionality rich, task centric, succinct, handy.
-It supports ssh proxying, jumping over networks, tasks chaining.
+Cable is functionality-rich, task-centric, succinct, handy.
+Cable Supports ssh proxying, jumping over networks, tasks chaining.
 
 We support $HOME/.ssh config as well as the global ssh client config.
 
@@ -19,9 +19,8 @@ libraryDependencies += "io.github.zhongwm" %% "cable" % "0.3.0"
 
 ### Supports ssh proxying, in a monadic way!
 
-Your host behind a bastion machine? no problem.
-You have a series of remote task to deal with? no problem.
-And connections are reused by multiple tasks for same machine.
+Your host behind a bastion machine? You have a series of remote tasks to deal with? no problem.
+And connections are reused by multiple tasks for the same machine.
 
 A DSL to represent composite ssh tasks.
 
