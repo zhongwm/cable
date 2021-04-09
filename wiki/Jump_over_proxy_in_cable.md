@@ -24,7 +24,7 @@ Host RegressionJumper
     Port 2065
     
 Host RegressionMachine1
-    Host 192.168.83.23
+    Hostname 192.168.83.23
     ProxyJumper Jane@RegressionJumper
 
 Host 10.0.1.*
