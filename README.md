@@ -37,7 +37,7 @@ import zhongwm.cable.zssh.Zssh._
 ```
 
 Most of the parameters can be omitted only the hostname or address (the first parameter) is
-required, We can omit the password use a private key, it can be your default .ssh rsa ssh key. Cable
+required, We can use a private key instead of password, it can be your default .ssh rsa ssh key. Cable
 will read your ssh key from that file and use that key for authentication.
       
 #### Simple ssh task with multiple tasks on a same host or connection.
