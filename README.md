@@ -53,6 +53,8 @@ will read your ssh key from that file and use that key for authentication.
 
 #### Multiple ssh tasks example
 
+To get multiple tasks on different hosts executed one after another, chain them using `+:`
+
 ```scala
   val simpleListTasks =
     Action("192.168.99.100", Some(privateKey), action = scriptIO("cat /etc/issue")) +:
@@ -60,6 +62,9 @@ will read your ssh key from that file and use that key for authentication.
 ```
 
 #### Nested ssh tasks example
+
+With nested ssh tasks composing, parent level acts as the jumper host for the child tasks, also
+parent level tasks get gets executed before the latter.
 
 ```scala
   val simpleNestedTasks = Parental(
