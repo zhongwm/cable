@@ -1,4 +1,5 @@
 Previous: [Constructing ssh tasks](constructing.md)
+
 Next: [Ssh to host out of your network](Ssh_with_proxy.md)
 
 ---
@@ -53,4 +54,5 @@ property as the aforementioned series.
 ---
 
 Previous: [Constructing ssh tasks](constructing.md)
+
 Next: [Ssh to host out of your network](Ssh_with_proxy.md)
