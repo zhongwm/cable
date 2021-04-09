@@ -63,6 +63,10 @@ Again, if you give the hostName to connect by address, which happens to be a pre
 host which needs to jump over some proxy, in our case, the `Host 10.0.1.*` section. You also get the
 connection jumped as what is configured.
 
+When we give it a password in the task, the password will be used to connect. We can omit it and use
+a private key, it can be your default .ssh rsa ssh key. Cable will read your ssh key from that file
+and use that key for authentication.
+
 Since we already supports multi level proxies jumping in cable, for the sub-level ssh tasks, we
 deliberately don't respect the proxies specified in ssh config, even if it is configured. Because we
 know we that we had given it a parent which acts just like it's proxy.

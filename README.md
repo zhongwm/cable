@@ -7,7 +7,9 @@ It's scala, It's purely functional, monadic.
 ## Practical, Functionality rich
 
 At the same time, it's functionality rich, task centric, succinct, handy.
-It supports ssh proxying, jumping over networks, tasks chaining.  
+It supports ssh proxying, jumping over networks, tasks chaining.
+
+We support $HOME/.ssh config as well as the global ssh client config.
 
 #### Installation
 
@@ -21,7 +23,7 @@ Your host behind a bastion machine? no problem.
 You have a series of remote task to deal with? no problem.
 And connections are reused by multiple tasks for same machine.
 
-A dsl to represent composite ssh tasks.
+A DSL to represent composite ssh tasks.
 
 #### Simple ssh task
 
@@ -31,15 +33,19 @@ import HostConnS._
 import zhongwm.cable.zssh.Zssh._
 ......
   val simpleTask =
-    Action("192.168.99.100", 2023, "user", "password", scriptIO("sleep 5; ls /"))
+    Action("192.168.99.100", password = ("password"), action = scriptIO("sleep 5; ls /"))
 ```
+
+Most of the parameters can be omitted only the hostname or address (the first parameter) is
+required, We can omit the password use a private key, it can be your default .ssh rsa ssh key. Cable
+will read your ssh key from that file and use that key for authentication.
       
 #### Simple ssh task with multiple tasks on a same host or connection.
 ```scala
   val simpleData =
     Action(
-      "192.168.99.100", 2023, "user", "password",
-      scriptIO("hostname") <&>
+      "192.168.99.100"
+      action = scriptIO("hostname") <&>
         scpUploadIO("build.sbt") <&
         scpDownloadIO("/etc/issue")
     )
@@ -50,16 +56,16 @@ import zhongwm.cable.zssh.Zssh._
 
 ```scala
   val simpleListTasks =
-    Action("192.168.99.100", 2022, "user", Some(privateKey), scriptIO("cat /etc/issue")) +:
-    Action("192.168.99.100", 2023, "user", "password", scpDownloadIO("/etc/issue"))
+    Action("192.168.99.100", Some(privateKey), action = scriptIO("cat /etc/issue")) +:
+    Action("192.168.99.100", port = Some(2023), username=Some("user"), password=("password"), scpDownloadIO("/etc/issue"))
 ```
 
 #### Nested ssh tasks example
 
 ```scala
   val simpleNestedTasks = Parental(
-    JustConnect("192.168.99.100", 2022, "user", "password"),
-      Action("192.168.99.100", 2023, "user", "password", scpUploadIO("build.sbt"))
+    JustConnect("192.168.99.100", username=Some("user"), password=Some("password")),
+      Action("192.168.99.100" password = Some("password"), action = scpUploadIO("build.sbt"))
   )
 ```
 
