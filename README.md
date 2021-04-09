@@ -99,7 +99,7 @@ Connections are guaranteed to be released correctly
 
 #### Docs
 
-Docs here [wiki](wiki/Contents.md)
+[Documentation](wiki/Contents.md)
 
 [To get started](src/test/scala/zhongwm/cable/zssh/ExecSpec.scala)
 
