@@ -12,7 +12,7 @@ task's structure.
 
 ```scala
 import zhongwm.cable.zssh.TypeDef._
-import HostConnS._
+import zhongwm.cable.zssh.TypeDef.HostConnS._
 import zhongwm.cable.zssh.Zssh._
 ...
   val compoundTask =
@@ -37,6 +37,11 @@ This paradigm brings possibility for later handling of the task's result.
 Dynamic creation of tasks, you can generate tasks from config file, like ansible book
 
 ```scala
+import zhongwm.cable.zssh._
+import zhongwm.cable.zssh.hdfsyntax.Hdf._
+import zhongwm.cable.zssh.hdfsyntax.HdfSyntax._
+import zhongwm.cable.zssh.Zssh._
+......
   val script2 =
   ssh(
     "192.168.99.100",
