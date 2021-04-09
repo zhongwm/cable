@@ -1,6 +1,6 @@
-Previous: [Ssh to host out of your network](Ssh_with_proxy.md)
-
 Next: [Jump over proxy in cable](Jump_over_proxy_in_cable.md)
+
+Previous: [Ssh to host out of your network](Ssh_with_proxy.md)
 
 ---
 # Ssh client side config file
