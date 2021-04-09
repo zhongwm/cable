@@ -60,7 +60,7 @@ trait HostPortUserParser extends CommonParsers {
     many1(hostPortUserP <~ opt(char(',') ~> many(horizontalWhitespace)))
 
   def multi1HostPortUserAsProxyJumperP = multi1HostPortUserP map {
-    _.foldLeft(None: Option[HostItem])((acc, i) => Some(HostItem(i.host, None, i.port, i.username, None, None, acc, None))).get
+    _.foldLeft(None: Option[HostItem])((acc, i) => Some(HostItem(SshConfigHeaderItem(i.host), None, i.port, i.username, None, None, acc, None))).get
   }
 
   private def parse0[A](p: Parser[A], in: String) = p.parseOnly(in) match {
@@ -69,7 +69,7 @@ trait HostPortUserParser extends CommonParsers {
     case Fail(i, s, m) =>
       Failure(new InvalidProxyCommandFormat(s"Invalid ProxyJumper format: $i"))
     case Partial(k) =>
-      Failure(new InvalidProxyCommandFormat("Invalid ProxyJummper format"))
+      Failure(new InvalidProxyCommandFormat("Invalid ProxyJumper format"))
   }
 
   def parseMulti1HostPortUserPort(in: String) =

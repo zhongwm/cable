@@ -51,7 +51,7 @@ import scala.concurrent.duration._
 sealed trait ProxySetting
 
 case class HostItem(
-  name: String,
+  name: SshConfigHostHeader,
   hostName: Option[String],
   port: Option[Int],
   username: Option[String],
@@ -62,18 +62,34 @@ case class HostItem(
 ) extends ProxySetting
 
 case class SshConfigItemAttr(attrName: String, attrValue: String)
-case class SshConfigHostItem(name: String, attrs: List[SshConfigItemAttr])
+case class SshConfigHostItem(name: SshConfigHostHeader, attrs: List[SshConfigItemAttr])
 
 case class SshConfig(hostItems: List[SshConfigHostItem])
 
-case class SshConfigRegistry(hostItems: Map[String, HostItem])
+case class SshConfigRegistry(hostItems: Map[String, HostItem], hostPatterns: Map[String, HostItem])
+
+sealed trait SshConfigHostHeader extends Product with Serializable
+
+final case class SshConfigHeaderPattern(pattern: String) extends SshConfigHostHeader {
+  override def toString = pattern
+
+  private[cable] val regex = new scala.util.matching.Regex(pattern.replaceAll("\\*", ".*"))
+
+  def matching(in: String): Boolean = regex.matches(in)
+}
+
+final case class SshConfigHeaderItem(text: String) extends SshConfigHostHeader {
+  override def toString = text
+}
 
 class ParseSshConfigFailed(msg: String) extends RuntimeException(msg)
 
 trait SshConfigParser extends CommonParsers with ProxyCommandParser {
-  val hostTitleLineP = (string("Host ") ~> many(either(letterOrDigit, oneOf("-_."))) <~ many(
+  val hostPatternP = string("Host ") ~> (many(identifierCharP) ~ char('*') ~ many(either(identifierCharP, char('*')).map(_.fold(a=>a, b=>b)))).map(abc => abc._1._1.mkString + abc._1._2 + abc._2.mkString)
+
+  val hostTitleLineP = (string("Host ") ~> either(hostPatternP, many1(identifierCharP).map(_.mkString_(""))) <~ many(
     horizontalWhitespace
-  ) <~ either(char('\n'), endOfInput)).map(_.map(_.fold(a => a, b => b)).mkString)
+  ) <~ either(char('\n'), endOfInput)).map(_.fold(a=>SshConfigHeaderPattern(a), b => SshConfigHeaderItem(b)))
 
   val attrP = for {
     attrName  <- skipMany1(spaceChar) ~> upper ~ identifierP
@@ -95,8 +111,9 @@ trait SshConfigParser extends CommonParsers with ProxyCommandParser {
   } yield SshConfig(hi)
 
   def parseUserSshConfig() =
-    Using(scala.io.Source.fromFile(Paths.get(sys.props("user.home"), ".ssh", "config").toFile)) { source =>
-      val sourceStr = source.mkString
+    Using(scala.io.Source.fromFile(Paths.get(sys.props("user.home"), ".ssh", "config").toFile))(_.mkString)
+      .flatMap(source1 => Using{scala.io.Source.fromFile("/etc/ssh/ssh_config")}{source1 ++ "\n" ++ _.mkString}.recover(_=>source1))
+      .map { sourceStr =>
       sshConfigP.parseOnly(sourceStr) match {
         case Done(input, rst) =>
           rst
@@ -143,7 +160,17 @@ trait SshConfigParser extends CommonParsers with ProxyCommandParser {
   def buildConfigRegistry(): Try[SshConfigRegistry] = {
     parseUserSshConfig().flatMap(in =>
       sshConfigHostItemToHostItem(in.hostItems).traverse(identity).map{a=>
-        SshConfigRegistry(a.map(i=>i.name -> i).toMap)
+        val hostItemCollector = collection.mutable.ArrayBuffer.empty[HostItem]
+        val hostPatternCollector = collection.mutable.ArrayBuffer.empty[HostItem]
+        a.foreach{ hi =>
+          hi.name match {
+            case _: SshConfigHeaderItem =>
+              hostItemCollector += hi
+            case _: SshConfigHeaderPattern =>
+              hostPatternCollector += hi
+          }
+        }
+        SshConfigRegistry(hostItemCollector.map(i=>i.name.toString -> i).toMap, hostPatternCollector.map(i => i.name.toString -> i).toMap)
       }
     )
   }

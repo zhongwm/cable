@@ -87,7 +87,7 @@ trait ProxyCommandParser extends CommonParsers with HostPortUserParser {
     }
   }
 
-  def cmdSegmentsToSshConfigHostItems(in: Seq[String], state:String="", acc:Try[HostItem]=Success(HostItem("", None, None, None, None, None, None, None))): Try[HostItem] = {
+  def cmdSegmentsToSshConfigHostItems(in: Seq[String], state:String="", acc:Try[HostItem]=Success(HostItem(SshConfigHeaderItem(""), None, None, None, None, None, None, None))): Try[HostItem] = {
     in match {
       case s :: ss =>
         state match {
@@ -172,8 +172,8 @@ trait ProxyCommandParser extends CommonParsers with HostPortUserParser {
         }
       case Nil =>
         acc.map{a=>
-          if (a.name.isEmpty && a.hostName.isDefined) {
-            a.copy(name=a.hostName.get)
+          if (a.name.toString.isEmpty && a.hostName.isDefined) {
+            a.copy(name=SshConfigHeaderItem(a.hostName.get))
           } else a
         }
     }

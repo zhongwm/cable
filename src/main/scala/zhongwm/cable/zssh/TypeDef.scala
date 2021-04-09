@@ -37,9 +37,10 @@ import zhongwm.cable.zssh.Zssh.{jumpSessionL, sessionL}
 import zhongwm.cable.zssh.Zssh.types._
 import zhongwm.cable.zssh.internal.ZsshContextInternal
 import cats.implicits._
+
 import scala.concurrent.duration._
 import scala.util._
-import zhongwm.cable.parser.{HostItem, ProxySetting, SshConfigParser}
+import zhongwm.cable.parser.{HostItem, ProxySetting, SshConfigHeaderItem, SshConfigHeaderPattern, SshConfigHostHeader, SshConfigParser}
 import zio.Runtime
 
 object TypeDef {
@@ -85,11 +86,11 @@ object TypeDef {
   private[cable] def deriveParentSessionFromSshConfig(proxySetting: ProxySetting): Option[SessionLayer] = {
     proxySetting match {
       case HostItem(name, hostName, port, username, password, privateKey, proxyJumper, connectionTimeout) =>
-        val defaulted = respectSshConfig(Host(name, port, username, password, privateKey, connectionTimeout))
+        val defaulted = respectSshConfig(Host(name.toString, port, username, password, privateKey, connectionTimeout))
         proxyJumper.flatMap {
           case ps: HostItem =>
             deriveParentSessionFromSshConfig(ps)
-        }.fold {
+        }.orElse(getConfiguredProxySetting(name).flatMap(deriveParentSessionFromSshConfig)).fold {
           (Some(defaulted.host), defaulted.port.orElse(Some(22))).mapN((h, p) => sessionL(Left(h, p), defaulted.username, defaulted.password, defaulted.privateKey, defaulted.connectionTimeout))
         } { pl =>
           (Some(defaulted.host), defaulted.port.orElse(Some(22))).mapN((h, p) => jumpSessionL(pl, h, p, defaulted.username, defaulted.password, defaulted.privateKey, defaulted.connectionTimeout))
@@ -97,8 +98,18 @@ object TypeDef {
     }
   }
 
+  private[cable] def getConfiguredProxySetting(hostSpec: SshConfigHostHeader): Option[ProxySetting] = hostSpec match {
+    case SshConfigHeaderItem(nm) =>
+      getConfiguredProxySetting(nm)
+    case SshConfigHeaderPattern(ptn) =>
+      configRegistry.flatMap(_.hostPatterns.find(_._1 == ptn)).map(_._2)
+  }
+
   private[cable] def getConfiguredProxySetting(hostName: String): Option[ProxySetting] = {
-    configRegistry.flatMap(_.hostItems.get(hostName)).flatMap(_.proxyJumper)
+    configRegistry.flatMap(a=>a.hostItems.get(hostName).orElse(a.hostPatterns.values.find(_.name match {
+      case p: SshConfigHeaderPattern =>p.matching(hostName)
+      case _ => false
+    }))).flatMap(_.proxyJumper)
   }
 
   def layerForHostConnInfo(hc: Host): SessionLayer =
