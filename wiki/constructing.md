@@ -11,6 +11,10 @@ task's structure.
 
 
 ```scala
+import zhongwm.cable.zssh.TypeDef._
+import HostConnS._
+import zhongwm.cable.zssh.Zssh._
+...
   val compoundTask =
   Action("192.168.99.100", 2022, "test", "test", "TheHostNameOfA", scriptIO("hostname")) +:
     Parental(
@@ -62,4 +66,4 @@ Dynamic creation of tasks, you can generate tasks from config file, like ansible
 
 ---
 
-<div style="text-align: right;">Next: <a href="Composing_tasks_to_run_in_one_host.md">Composing tasks to run in one host</a></div>
+<div style="text-align: right;">Next: <a href="Composing_tasks_to_run_on_one_host.md">Composing tasks to run in one host</a></div>

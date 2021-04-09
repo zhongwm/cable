@@ -7,6 +7,10 @@ Previous: [Constructing ssh tasks](constructing.md)
 To compose tasks to run inside a host, we use [zio](https://zio.dev),
 
 ```scala
+import zhongwm.cable.zssh._
+import zhongwm.cable.zssh.hdfsyntax.Hdf._
+import zhongwm.cable.zssh.hdfsyntax.HdfSyntax._
+......
   val action = {
     scriptIO("hostname") <&>         // One script
       scpUploadIO("build.sbt") <&    // 

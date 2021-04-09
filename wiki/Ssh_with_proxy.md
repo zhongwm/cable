@@ -1,6 +1,8 @@
-<div style="text-align: right;">Next: <a href="">How to use ssh to jump to another network</a></div>
+Previous: [Composing tasks to run on one host](Composing_tasks_to_run_on_one_host.md)
+<div style="text-align: right;">Next: <a href="">Ssh config file</a></div>
 
-### How to connect the hosts in another network which you have no route to
+---
+# Connect the hosts in another network which you have no route to
 
 Suppose some of your target hosts are in a DMZ zone, you only have a host acting as a bastion
 ProxyJumper. In the traditional way of ssh connection, as the way provided by openSSH, you specify

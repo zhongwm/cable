@@ -26,6 +26,10 @@ A dsl to represent composite ssh tasks.
 #### Simple ssh task
 
 ```scala
+import zhongwm.cable.zssh.TypeDef._
+import HostConnS._
+import zhongwm.cable.zssh.Zssh._
+......
   val simpleTask =
     Action("192.168.99.100", 2023, "user", "password", scriptIO("sleep 5; ls /"))
 ```

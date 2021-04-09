@@ -1,6 +1,9 @@
 Previous: [Ssh to host out of your network](Ssh_with_proxy.md)
 
-### Ssh client side config file
+Next: [Jump over proxy in cable](Jump_over_proxy_in_cable.md)
+
+---
+# Ssh client side config file
 
 There is a config file for your client side ssh usage, on most Unix systems, there are two levels of
 config, for user level, it's `$HOME/.ssh/config`, for the system level, its' `/etc/ssh/ssh_config`
