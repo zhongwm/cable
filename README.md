@@ -1,4 +1,4 @@
-# Cable - scala ssh client library
+# Cable - scala ssh library
 
 ## A SSH client lib that is Functional, Monadic
 
