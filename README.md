@@ -53,7 +53,7 @@ will read your ssh key from that file and use that key for authentication.
 
 #### Multiple ssh tasks example
 
-To get multiple tasks on different hosts executed one after another, chain them using `+:`
+To get multiple tasks on different hosts executed one after another, chain them up using `+:`.
 
 ```scala
   val simpleListTasks =

@@ -33,7 +33,7 @@ Chunk[String])), Unit))`
 With `Parental` construct, we place a nested ssh tasks composing, parent level acts as the jumper host for the child tasks, also
 parent level tasks get gets executed before the latter.
 
-To get multiple tasks on different hosts executed one after another, chain them using `+:`.
+To get multiple tasks on different hosts executed one after another, chain them up using `+:`.
 
 This paradigm brings possibility for later handling of the task's result.
 
