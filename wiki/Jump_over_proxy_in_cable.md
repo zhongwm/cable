@@ -19,7 +19,7 @@ Host FeatureMachine*
     ProxyCommand sshpass -p 'proxyaw354w^&%pas_-od' ssh -q -vNJms -i ~/.ssh/id_rsa -l 18612341234 -W %h:%p -p 2022 192.168.100.12
 
 Host RegressionJumper
-    Host 192.168.83.254
+    Hostname 192.168.83.254
     User JohnDoe
     Port 2065
     
