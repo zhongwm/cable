@@ -90,8 +90,7 @@ object RemoteActionFileDefs {
     }
 
     /**
-     * ||
-     * v
+     *
      * @param groupName
      * @return groupName -> isGroup(boolean)
      */
@@ -104,8 +103,7 @@ object RemoteActionFileDefs {
     }
 
     /**
-     * ||
-     * v
+     *
      * @param l
      * @return
      */

@@ -111,7 +111,7 @@ trait SshConfigParser extends CommonParsers with ProxyCommandParser {
   } yield SshConfig(hi)
 
   def parseUserSshConfig() =
-    Using(scala.io.Source.fromFile(Paths.get(sys.props("user.home"), ".ssh", "config").toFile))(_.mkString)
+    Using(scala.io.Source.fromFile(Paths.get(sys.props("user.home"), ".ssh", "config").toFile))(_.mkString).recover(_=>"")
       .flatMap(source1 => Using{scala.io.Source.fromFile("/etc/ssh/ssh_config")}{source1 ++ "\n" ++ _.mkString}.recover(_=>source1))
       .map { sourceStr =>
       sshConfigP.parseOnly(sourceStr) match {
