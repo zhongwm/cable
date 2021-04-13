@@ -42,7 +42,6 @@ import cable.zssh.TypeDef._
 import cable.zssh.TypeDef.HostConnS._
 import cable.zssh.Zssh._
 
-// ...
 Parental(
   JustConnect("RegressionMachine1", password = Some("test")),
   Action("testHost2", password = Some("test"), action = scriptIO("hostname"))

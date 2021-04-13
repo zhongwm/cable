@@ -13,7 +13,6 @@ import cable.zssh.TypeDef._
 import cable.zssh.TypeDef.HostConnS._
 import cable.zssh.Zssh._
 
-// ......
 val action = {
   scriptIO("hostname") <&> // One script
     scpUploadIO("build.sbt") <& // 

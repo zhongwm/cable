@@ -31,7 +31,6 @@ import cable.zssh.TypeDef._
 import HostConnS._
 import cable.zssh.Zssh._
 
-// ......
 val simpleTask =
   Action("192.168.99.100", password = ("password"), action = scriptIO("sleep 5; ls /"))
 ```

@@ -14,7 +14,6 @@ import cable.zssh.TypeDef._
 import cable.zssh.TypeDef.HostConnS._
 import cable.zssh.Zssh._
 
-// ...
 val compoundTask =
   Action("192.168.99.100", port = Some(2022), "TheHostNameOfA", action = scriptIO("hostname")) +:
     Parental(
@@ -43,12 +42,11 @@ Dynamic creation of tasks, you can generate tasks from config file, like ansible
 
 ```scala
 import cable.zssh.{FactAction, Zssh}
-import zhongwm.cable.zssh._
+import cable.zssh._
 import cable.zssh.hdfsyntax.Hdf._
 import cable.zssh.hdfsyntax.HdfSyntax._
 import cable.zssh.Zssh._
 
-// ......
 val script2 =
   ssh(
     "192.168.99.100",
