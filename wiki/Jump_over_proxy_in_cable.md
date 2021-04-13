@@ -38,14 +38,15 @@ Host 10.0.1.*
 Now constructing the tasks
 
 ```scala
-import zhongwm.cable.zssh.TypeDef._
-import zhongwm.cable.zssh.TypeDef.HostConnS._
-import zhongwm.cable.zssh.Zssh._
-...
+import cable.zssh.TypeDef._
+import cable.zssh.TypeDef.HostConnS._
+import cable.zssh.Zssh._
+
+// ...
 Parental(
-    JustConnect("RegressionMachine1", password = Some("test")),
-    Action("testHost2", password = Some("test"), action = scriptIO("hostname"))
-  )
+  JustConnect("RegressionMachine1", password = Some("test")),
+  Action("testHost2", password = Some("test"), action = scriptIO("hostname"))
+)
 ```
 
 When you run that, you get 2 hops to get to `testHost2`.

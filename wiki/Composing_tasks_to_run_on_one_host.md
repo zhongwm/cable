@@ -9,18 +9,19 @@ Previous: [Constructing ssh tasks](constructing.md)
 To compose tasks to run inside a host, we use [zio](https://zio.dev),
 
 ```scala
-import zhongwm.cable.zssh.TypeDef._
-import zhongwm.cable.zssh.TypeDef.HostConnS._
-import zhongwm.cable.zssh.Zssh._
-......
-  val action = {
-    scriptIO("hostname") <&>         // One script
-      scpUploadIO("build.sbt") <&    // 
-      scpDownloadIO("/etc/issue")
-  }
+import cable.zssh.TypeDef._
+import cable.zssh.TypeDef.HostConnS._
+import cable.zssh.Zssh._
+
+// ......
+val action = {
+  scriptIO("hostname") <&> // One script
+    scpUploadIO("build.sbt") <& // 
+    scpDownloadIO("/etc/issue")
+}
 ```
 
-The first `scriptIO("...")` says to executed a script / command in some host, `<&>` means run the
+The first `scriptIO("...")` says to execute a script / command in some host, `<&>` means run the
 following task at the same time (in parallel). The following `scpUploadIO("...")` means to upload a
 file from local file system to via scp to the remote host (the same host as the scriptIO one). 
 Likely the `scpDownloadIO("...")` means to download a file from the remote host.
@@ -42,7 +43,7 @@ which are all sequential combine operators.
 
 ```scala
   val action = {
-    scriptIO("hostname") <*>         // Here <*>, not to comfuse with <&>
+    scriptIO("hostname") <*>         // Here <*>, not to confuse with <&>
       scpUploadIO("build.sbt") <*    // 
       scpDownloadIO("/etc/issue")
   }

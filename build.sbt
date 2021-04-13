@@ -4,22 +4,20 @@ import Dependencies._
 name := "cable"
 
 // library version
-ThisBuild / version := "0.3.1"
+ThisBuild / version := "0.4.0"
 
 // groupId, SCM, license information
 ThisBuild / organization := "io.github.zhongwm"
 ThisBuild / homepage := Some(url("https://github.com/zhongwm/cable"))
 ThisBuild / credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credentials")
 ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/zhongwm/cable"), "git@github.com:zhongwm/cable.git"))
-ThisBuild / developers := List(Developer("zhongwenming", "Wenming Zhong", "zhongwm@gmail.com", url("https://zhongwm.github.io")))
+ThisBuild / developers := List(Developer("Wenming Zhong", "Zhongwenming", "zhongwm@gmail.com", url("https://zhongwm.github.io")))
 ThisBuild / licenses += "PRIVATE" -> url("https://raw.githubusercontent.com/zhongwm/zhongwm.github.io/master/LICENSE.txt")
 
 ThisBuild / pomIncludeRepository := { _ => false }
 ThisBuild / publishMavenStyle := true
 
-// disable publishing the api docs jar
 ThisBuild / Compile / packageDoc / publishArtifact := true
-// disable publishing the main sources jar
 ThisBuild / Compile / packageSrc / publishArtifact := true
 
 // disable publish ith scala version, otherwise artifact name will include scala version

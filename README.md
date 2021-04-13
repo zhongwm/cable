@@ -14,7 +14,7 @@ We support $HOME/.ssh config as well as the global ssh client config.
 #### Installation
 
 ```scala
-libraryDependencies += "io.github.zhongwm" %% "cable" % "0.3.1"
+libraryDependencies += "io.github.zhongwm" %% "cable" % "0.4.0"
 ```
 
 ### Supports ssh proxying, in a monadic way!
@@ -27,12 +27,13 @@ A DSL to represent composite ssh tasks.
 #### Simple ssh task
 
 ```scala
-import zhongwm.cable.zssh.TypeDef._
+import cable.zssh.TypeDef._
 import HostConnS._
-import zhongwm.cable.zssh.Zssh._
-......
-  val simpleTask =
-    Action("192.168.99.100", password = ("password"), action = scriptIO("sleep 5; ls /"))
+import cable.zssh.Zssh._
+
+// ......
+val simpleTask =
+  Action("192.168.99.100", password = ("password"), action = scriptIO("sleep 5; ls /"))
 ```
 
 Most of the parameters can be omitted only the hostname or address (the first parameter) is

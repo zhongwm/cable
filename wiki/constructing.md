@@ -9,20 +9,20 @@
 With statical definition of tasks, one benefits is that you get type information that reflects your
 task's structure.
 
-
 ```scala
-import zhongwm.cable.zssh.TypeDef._
-import zhongwm.cable.zssh.TypeDef.HostConnS._
-import zhongwm.cable.zssh.Zssh._
-...
-  val compoundTask =
-  Action("192.168.99.100", 2022, "test", "test", "TheHostNameOfA", scriptIO("hostname")) +:
+import cable.zssh.TypeDef._
+import cable.zssh.TypeDef.HostConnS._
+import cable.zssh.Zssh._
+
+// ...
+val compoundTask =
+  Action("192.168.99.100", port = Some(2022), "TheHostNameOfA", action = scriptIO("hostname")) +:
     Parental(
-      JustConnect("192.168.99.100", 2023, "test", "test"),
-      Action("192.168.99.100", 2022, "test", "test", scriptIO("hostname")) +:
-        Action("192.168.99.100", 2023, "test", "test", sshIoFromFactsM(d => scriptIO(s"echo The last fact we got is ${d("TheHostNameOfA")}")) <*> scriptIO("echo Current host is $(hostname)"))
+      JustConnect("192.168.99.100", port = Some(2023)),
+      Action("192.168.99.100", port = Some(2022), password = Some("test"), action = scriptIO("hstname")) +:
+        Action("192.168.99.100", Some(2023), action = sshIoFromFactsM(d => scriptIO(s"echo The last fact we got is ${d("TheHostNameOfA")}")) <*> scriptIO("echo Current host is $(hostname)"))
     ) +:
-    Action("192.168.99.100", 2023, "test", "test", scriptIO("hostname")) +:
+    Action("192.168.99.100", port = Some(2023), action = scriptIO("hostname")) +:
     HCNil
 ```
 
@@ -42,34 +42,33 @@ This paradigm brings possibility for later handling of the task's result.
 Dynamic creation of tasks, you can generate tasks from config file, like ansible book
 
 ```scala
+import cable.zssh.{FactAction, Zssh}
 import zhongwm.cable.zssh._
-import zhongwm.cable.zssh.hdfsyntax.Hdf._
-import zhongwm.cable.zssh.hdfsyntax.HdfSyntax._
-import zhongwm.cable.zssh.Zssh._
-......
-  val script2 =
+import cable.zssh.hdfsyntax.Hdf._
+import cable.zssh.hdfsyntax.HdfSyntax._
+import cable.zssh.Zssh._
+
+// ......
+val script2 =
   ssh(
     "192.168.99.100",
     2022,
     Some("test"),
     Some("test"),
-    None,
-    Some(FactAction("hostNameOfA", Zssh.scpDownloadIO("/etc/issue") *> Zssh.scriptIO("hostname"))),   // Could be set to None to opt out doing anything.
+    action = Some(FactAction("hostNameOfA", Zssh.scpDownloadIO("/etc/issue") *> Zssh.scriptIO("hostname"))), // Could be set to None to opt out doing anything.
     ssh(
       "192.168.99.100",
       2023,
       Some("test"),
       Some("test"),
-      None,
-      Some(FactAction("just echoing last fact", Zssh.sshIoFromFacts(d=>Zssh.scriptIO(s"echo Displaying fact value: ${d("hostNameOfA")}")))),  // Could be set to None to opt out doing anything.
+      action = Some(FactAction("just echoing last fact", Zssh.sshIoFromFacts(d => Zssh.scriptIO(s"echo Displaying fact value: ${d("hostNameOfA")}")))), // Could be set to None to opt out doing anything.
     ),
     ssh(
       "192.168.99.100",
       2023,
       Some("test"),
       Some("test"),
-      None,
-      Some(FactAction("Chained at same level", Zssh.sshIoFromFacts(d=>Zssh.scriptIO(s"echo What we got: ${m("just echoing last fact")}")))),  // Could be set to None to opt out doing anything.
+      action = Some(FactAction("Chained at same level", Zssh.sshIoFromFacts(d => Zssh.scriptIO(s"echo What we got: ${m("just echoing last fact")}")))), // Could be set to None to opt out doing anything.
     ),
   )
 ```
