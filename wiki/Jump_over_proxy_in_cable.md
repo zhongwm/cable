@@ -20,17 +20,17 @@ Assume that you have your ssh config in ~/.ssh/config like this:
 Host FeatureMachine*
     ProxyCommand sshpass -p 'proxyaw354w^&%pas_-od' ssh -q -vNJms -i ~/.ssh/id_rsa -l 18612341234 -W %h:%p -p 2022 192.168.100.12
 
-Host RegressionJumper
+Host RegressionJump
     Hostname 192.168.83.254
     User JohnDoe
     Port 2065
     
 Host RegressionMachine1
     Hostname 192.168.83.23
-    ProxyJumper Jane@RegressionJumper
+    ProxyJump Jane@RegressionJump
 
 Host 10.0.1.*
-    ProxyJumper William@172.16.8.21:1022, host2 
+    ProxyJump William@172.16.8.21:1022, host2 
 
 ```
 
