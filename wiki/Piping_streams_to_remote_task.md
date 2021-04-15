@@ -35,7 +35,7 @@ val putStringI = Action("my-server", action = scriptIO("cat -", "String data"))
 val putStream = Action("my-server", action = scriptIO("cat -", inputStream))
 ```
 
-In the above task constructions we just name the host to connect to, in this case "my-server", and
-leave the username, password or private key can be omitted, these default to current system user and
-private key, which is just like the way SSH does, if you get your machine's ssh-copy-id -ish thing
-configured, indeed you can just name the host to connect to.
+Moreover, in the above task constructions we just name the host to connect to, in this case
+"my-server", and leave the username, password or private key can be omitted, these default to
+current system user and private key, which is just like the way SSH does, if you get your machine's
+ssh-copy-id -ish thing configured, indeed you can just name the host to connect to.
