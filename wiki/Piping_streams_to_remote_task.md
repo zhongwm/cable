@@ -4,13 +4,13 @@ Previous: [Jump over proxy in cable](Jump_over_proxy_in_cable.md)
 
 When using SSH with bash scripting, people often make use of the UNIX pipe.
 
-In Cable we support pipe in the several methods:
+To get the pipe mechanism works in Cable, this is what we do:
 
 ```scala
 scriptIO(cmd: String, inputStream: InputStream)
 ```
 
-With 3 more overloads
+And yes, there are 3 more overloads
 
 ```scala
 scriptIO(cmd: String, inputAsString: String)
@@ -34,6 +34,10 @@ val putFileI = Action("my-server", action = scriptIO("cat -", new File("My file.
 val putStringI = Action("my-server", action = scriptIO("cat -", "String data"))
 val putStream = Action("my-server", action = scriptIO("cat -", inputStream))
 ```
+
+When it comes to the Resource Management, what we do about the inputStream? Well, roughly speaking,
+as a well accepted convention, whoever creates it is responsible for closing it. So we close them by
+we calling-side ourselves.
 
 Moreover, in the above task constructions we just name the host to connect to, in this case
 "my-server", and leave the username, password or private key can be omitted, these default to
