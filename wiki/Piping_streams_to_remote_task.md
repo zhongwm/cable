@@ -40,6 +40,6 @@ as a well accepted convention, whoever creates it is responsible for closing it.
 we calling-side ourselves.
 
 Moreover, in the above task constructions we just name the host to connect to, in this case
-"my-server", and leave the username, password or private key can be omitted, these default to
+"my-server", and leave the username, password or private key omitted, these default to the
 current system user and private key, which is just like the way SSH does, if you get your machine's
 ssh-copy-id -ish thing configured, indeed you can just name the host to connect to.
