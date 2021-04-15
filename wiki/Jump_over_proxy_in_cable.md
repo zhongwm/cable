@@ -1,3 +1,5 @@
+Next: [Piping streams to remote tasks](Piping_streams_to_remote_task.md)
+
 Previous: [Ssh config file](Ssh_config_file.md)
 
 ---
@@ -70,3 +72,9 @@ and use that key for authentication.
 Since we already supports multi level proxies jumping in cable, for the sub-level ssh tasks, we
 deliberately don't respect the proxies specified in ssh config, even if it is configured. Because we
 know we that we had given it a parent which acts just like it's proxy.
+
+---
+
+Next: [Piping streams to remote tasks](Piping_streams_to_remote_task.md)
+
+Previous: [Ssh config file](Ssh_config_file.md)

@@ -35,10 +35,12 @@ package cable.zssh
 import cable.util.LogbackConfig
 import cable.zssh.TypeDef.Host
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, FileInputStream, IOException, OutputStream, PipedInputStream, PipedOutputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, File, FileInputStream, IOException, InputStream, OutputStream, PipedInputStream, PipedOutputStream}
 import java.net.{InetSocketAddress, SocketAddress}
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
+import java.nio.ByteBuffer
+import java.nio.channels.Channels
 import java.security.{KeyPair, PublicKey}
 import java.util
 import org.apache.sshd.client.SshClient
@@ -61,6 +63,8 @@ import zio.console._
 import zio.stream._
 
 import scala.concurrent.duration._
+import scala.io.Source
+import scala.util.Using
 
 case class Zssh(
                connInfo: Either[(String, Int), SshdSocketAddress],
@@ -354,16 +358,100 @@ object Zssh {
       _ <- putStrLn(cmdOutput.toString)
     } yield (cmdOutput)
 
-  def scriptIO(cmd: String) =
+  def scriptIO(cmd: String, inputStream: InputStream = new ByteArrayInputStream(Array[Byte]())): ZIO[Blocking with ZConsole with Has[ClientSession], IOException, SshScriptIOResult] =
     for {
       cs <- ZIO.environment[Has[ClientSession]]
-      r  <- script(cmd)(cs.get)
+      r  <- script(cmd, inputStream)(cs.get)
     } yield r
 
   def sshIoFromFactsM[A](buildIO: Map[String, _] => SshIO[A]): SshIO[A] =
     ZIO.access[Has[ZsshContext]](_.get) >>= {facts => buildIO(facts.data)}
 
-  def script(cmd: String)(cs: ClientSession) =
+  /**
+   * Execute the shell script in the remote host, data read from the InputStream get piped to the
+   * remote host task (process).
+   *
+   * @param cmd shell script
+   * @param inputData This is what gets piped to the remote task
+   * @return
+   */
+  def scriptIO(cmd: String, inputData: ByteBuffer): ZIO[Blocking with ZConsole with Has[ClientSession], IOException, SshScriptIOResult] =
+    mapToIOE(effectBlocking {
+      val outputStream = new ByteArrayOutputStream()
+      val channel = Channels.newChannel(outputStream)
+      channel.write(inputData)
+      outputStream.toByteArray
+      new ByteArrayInputStream(outputStream.toByteArray)
+    }) >>= { inputStream =>
+      scriptIO(cmd, inputStream)
+    }
+
+  /**
+   * Execute the shell script in the remote host, String as content to stream
+   *
+   * An equiv script in bash:
+   * {{{echo "inputData" | ssh localhost echo - }}}
+   * as in scala
+   * {{{scriptIO("echo -", "inputData")}}}
+   *
+   * @param cmd The script to execute.
+   * @param inputAsString The input data in string
+   * @return
+   */
+  def scriptIO(cmd: String, inputAsString: String): ZIO[Blocking with ZConsole with Has[ClientSession], IOException, SshScriptIOResult] =
+    mapToIOE(ZIO.succeed( new ByteArrayInputStream(inputAsString.getBytes(StandardCharsets.UTF_8)))) >>= (sis => scriptIO(cmd, sis))
+
+  /**
+   * Execute the shell script in the remote host, data read from the file get piped to the remote
+   * host task (process).
+   *
+   * @param cmd
+   * @param fileInput
+   * @return
+   */
+  def scriptIO(cmd: String, fileInput: File): ZIO[Blocking with ZConsole with Has[ClientSession], IOException, SshScriptIOResult] =
+    mapToIOE(ZIO.bracket {
+      ZIO.effect(new FileInputStream(fileInput))
+    }(fis => ZIO.effect(fis.close()).ignore)(fis => scriptIO(cmd, fis)))
+
+  /**
+   * Execute the shell script in the remote host.
+   *
+   * An equiv example in bash:
+   * {{{cat file1 | ssh host cat -> /tmp/file1 }}}
+   * as in scala
+   * {{{scriptIO("cat -> /tmp/file1", new File("file1"))}}}
+   * 
+   * @param cmd the script to execute
+   * @param inputData the input data
+   * @return
+   */
+  def scriptIO(cmd: String, inputData: Array[Byte]): ZIO[Blocking with ZConsole with Has[ClientSession], IOException, SshScriptIOResult] =
+    scriptIO(cmd, new ByteArrayInputStream(inputData))
+
+  /**
+   * Execute the shell script file in the remote host
+   *
+   * An equiv example in bash
+   *
+   * {{{cat script.sh | ssh host bash - }}}
+   *
+   * @param scriptFile The file object of the script file.
+   */
+  def scriptIO(scriptFile: File): ZIO[Blocking with ZConsole with Has[ClientSession], IOException, SshScriptIOResult] =
+    ZManaged.fromAutoCloseable(ZIO.effect(Source.fromFile(scriptFile))).map(_.mkString).orElse(ZManaged.succeed("")).use(scriptIO(_))
+
+  /**
+   * Execute the script in the remote host. [[Chunk]] of [[String]] as input data
+   *
+   * @param cmd shell script to execute
+   * @param input input data.
+   * @return
+   */
+  def scriptIO(cmd: String, input: Chunk[String]): ZIO[Blocking with ZConsole with Has[ClientSession], IOException, SshScriptIOResult] =
+    scriptIO(cmd, input.mkString)
+
+  def script(cmd: String, inputData: InputStream = new ByteArrayInputStream(Array[Byte]()))(cs: ClientSession) =
     for {
       setup <- effectBlocking {
         if (log.isDebugEnabled) log.debug(s"Executing command $cmd")
@@ -376,6 +464,7 @@ object Zssh {
         //            val out = new ByteArrayOutputStream
         //            val errOut = new ByteArrayOutputStream
         if (log.isDebugEnabled) log.debug("Created streams")
+        ch.setIn(inputData)
         ch.setOut(pos)
         ch.setErr(peos)
         if (log.isDebugEnabled) log.debug("Open channel and wait.")
@@ -388,7 +477,11 @@ object Zssh {
           new IOException("Non-IOException made IOE", ex)
       }
       outS <- (ZIO.bracket(ZIO.succeed(setup)) { c =>
-        ZIO.effect {
+        // We don't close it here. inputData comes in as a established resource, whoever creates it is responsible to close it.
+        /*effectBlocking {
+          inputData.close()
+        }.orElse(putStrLn("Closing input data stream encountered an error.")) *>*/
+        effectBlocking {
             if (log.isDebugEnabled) log.debug("Reclaiming io resources.")
             c._1.close()
           }.orElse(putStrLn("Closing channel encountered an error.")) *>

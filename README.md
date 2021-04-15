@@ -14,7 +14,7 @@ We support $HOME/.ssh config as well as the global ssh client config.
 #### Installation
 
 ```scala
-libraryDependencies += "io.github.zhongwm" %% "cable" % "0.4.0"
+libraryDependencies += "io.github.zhongwm" %% "cable" % "0.4.1"
 ```
 
 ### Supports ssh proxying, in a monadic way!

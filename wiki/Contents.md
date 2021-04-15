@@ -8,3 +8,4 @@
 
 [Jumper over proxies in cable](Jump_over_proxy_in_cable.md)
 
+[Piping streams to remote task](Piping_streams_to_remote_task.md)
