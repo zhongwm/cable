@@ -4,7 +4,7 @@ Previous: [Jump over proxy in cable](Jump_over_proxy_in_cable.md)
 
 When using SSH with bash scripting, people often make use of the UNIX pipe.
 
-To get the pipe mechanism works in Cable, this is what we do:
+To get the pipe mechanism works in Cable, we do:
 
 ```scala
 scriptIO(cmd: String, inputStream: InputStream)
