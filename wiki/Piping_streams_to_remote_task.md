@@ -7,10 +7,6 @@ When using SSH with bash scripting, people often make use of the UNIX pipe.
 In Cable we support pipe in the several methods:
 
 ```scala
-import cable.zssh.Zssh._
-```
-
-```scala
 scriptIO(cmd: String, inputStream: InputStream)
 ```
 
@@ -30,6 +26,10 @@ scriptIO(cmd: String, inputData: ByteBuffer)
 As an example, we pipe data to remote host tasks like this:
 
 ```scala
+import cable.zssh.TypeDef._
+import HostConnS._
+import cable.zssh.Zssh._
+
 val putFileI = Action("my-server", action = scriptIO("cat -", new File("My file.txt")))
 val putStringI = Action("my-server", action = scriptIO("cat -", "String data"))
 val putStream = Action("my-server", action = scriptIO("cat -", inputStream))
