@@ -1,4 +1,4 @@
-[![Release Artifacts][Badge-SonatypeReleases]][Link-SonatypeReleases]
+[![Release Artifacts][Badge-MavenCentralReleases]][Link-MavenCentralReleases]
 [![Badge-Scaladoc]][Link-Scaladoc]
 
 # Cable - scala ssh library
@@ -170,3 +170,9 @@ Based on mina-sshd-netty
 This project is greatly inspired by a famous python project [ansible](https://ansible.com), which is
 a very famous project in devops. This project strives to join the functional world and the devops
 world in the field of remote host related tasks. Not all of them, not all of ansible, but in some way.
+
+
+[Link-MavenCentralReleases]: https://repo1.maven.org/maven2/io/github/zhongwm/cable_2.13/ "Maven Central Releases"
+[Badge-MavenCentralReleases]: https://maven-badges.herokuapp.com/maven-central/io.github.zhongwm/cable_2.13/badge.svg "Maven Central Release"
+[Badge-Scaladoc]: https://javadoc-badge.appspot.com/io.github.zhongwm/cable_2.13.svg?label=scaladoc "Scaladoc"
+[Link-Scaladoc]: https://javadoc.io/doc/io.github.zhongwm/cable_2.13/latest/cable/index.html
