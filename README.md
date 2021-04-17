@@ -1,3 +1,6 @@
+[![Release Artifacts][Badge-SonatypeReleases]][Link-SonatypeReleases]
+[![Badge-Scaladoc]][Link-Scaladoc]
+
 # Cable - scala ssh library
 
 ## A SSH client lib that is Functional, Monadic
@@ -32,7 +35,7 @@ import HostConnS._
 import cable.zssh.Zssh._
 
 val simpleTask =
-  Action("192.168.99.100", password = ("password"), action = scriptIO("sleep 5; ls /"))
+  Action("192.168.99.100", password = Some("password"), action = scriptIO("sleep 5; ls /"))
 ```
 
 Most of the parameters can be omitted only the hostname or address (the first parameter) is

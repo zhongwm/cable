@@ -52,6 +52,19 @@ Parental(
 
 When you run that, you get 2 hops to get to `testHost2`.
 
+You can even get multihop by embedding another proxy "innerProxy" which is not configured by the SSH
+config file.
+
+```scala
+Parental(
+  JustConnect("RegressionMachine1"),
+  Parental(
+    JustConnect("innerProxy"),
+    Action("testHost2", password = Some("test"), action = scriptIO("hostname"))
+  )
+)
+```
+
 ##### By address
 
 ```scala
