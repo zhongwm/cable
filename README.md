@@ -1,5 +1,6 @@
-[![Release Artifacts][Badge-MavenCentralReleases]][Link-MavenCentralReleases]
-[![Badge-Scaladoc]][Link-Scaladoc]
+[comment]: <> ([![Release Artifacts][Badge-MavenCentralReleases]][Link-MavenCentralReleases])
+
+[comment]: <> ([![Badge-Scaladoc]][Link-Scaladoc])
 
 # Cable - scala ssh library
 
@@ -109,7 +110,7 @@ Connections are guaranteed to be released correctly
 
 [Documentation](wiki/Contents.md)
 
-[To get started](src/test/scala/zhongwm/cable/zssh/ExecSpec.scala)
+[To get started](src/test/scala/cable/zssh/ExecSpec.scala)
 
 ## Full Support for ZIO programming
 
@@ -172,7 +173,10 @@ a very famous project in devops. This project strives to join the functional wor
 world in the field of remote host related tasks. Not all of them, not all of ansible, but in some way.
 
 
-[Link-MavenCentralReleases]: https://repo1.maven.org/maven2/io/github/zhongwm/cable_2.13/ "Maven Central Releases"
-[Badge-MavenCentralReleases]: https://maven-badges.herokuapp.com/maven-central/io.github.zhongwm/cable_2.13/badge.svg "Maven Central Release"
-[Badge-Scaladoc]: https://javadoc-badge.appspot.com/io.github.zhongwm/cable_2.13.svg?label=scaladoc "Scaladoc"
-[Link-Scaladoc]: https://javadoc.io/doc/io.github.zhongwm/cable_2.13/latest/cable/index.html
+[comment]: <> ([Link-MavenCentralReleases]: https://repo1.maven.org/maven2/io/github/zhongwm/cable_2.13/ "Maven Central Releases")
+
+[comment]: <> ([Badge-MavenCentralReleases]: https://maven-badges.herokuapp.com/maven-central/io.github.zhongwm/cable_2.13/badge.svg "Maven Central Release")
+
+[comment]: <> ([Badge-Scaladoc]: https://javadoc-badge.appspot.com/io.github.zhongwm/cable_2.13.svg?label=scaladoc "Scaladoc")
+
+[comment]: <> ([Link-Scaladoc]: https://javadoc.io/doc/io.github.zhongwm/cable_2.13/latest/cable/index.html)
